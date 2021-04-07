@@ -9,6 +9,10 @@
 /[Bb]uilds/
 /[Ll]ogs/
 /[Mm]emoryCaptures/
+/MSc_HoloLens_Restart/Builds/
+/MSc_HoloLens_Restart/Library/
+/MSc_HoloLens_Restart/Logs/
+/MSc_HoloLens_Restart/obj/
 
 # Asset meta data should only be ignored when the corresponding asset is also ignored
 !/[Aa]ssets/**/*.meta
