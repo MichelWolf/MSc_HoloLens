@@ -146,7 +146,11 @@ public class Reader : MonoBehaviour
         //Debug.Log(tree.RootNode.positiveChild.Count);
         //SplitTreeToLOD(50);
         binaryReader.Close();
-        FindObjectOfType<SpawnSpheres>().ApplyToParticleSystem(pointCloud);
+        SpawnSpheres spawner = FindObjectOfType<SpawnSpheres>();
+        if (spawner != null)
+        {
+            spawner.ApplyToParticleSystem(pointCloud);
+        }
         yield return null;
     }
 
