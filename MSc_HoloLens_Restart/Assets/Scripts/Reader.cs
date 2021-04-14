@@ -7,12 +7,14 @@ using System.Collections.Generic;
 using DataStructures.ViliWonka.KDTree;
 using System.Windows;
 using System.Threading.Tasks;
+using System.Linq;
 
 public class Reader : MonoBehaviour
 {
     public TextAsset file;
     internal SpawnSpheres spawner;
     internal HttpFileFetcher http_fetcher;
+    internal UIManager ui_manager;
 
     public string fileName;
     protected BinaryReader binaryReader = null;
@@ -25,12 +27,19 @@ public class Reader : MonoBehaviour
 
     internal KDTree tree;
 
+    public List<Vector3> averagePoints;
+    public bool average;
+
     void Start()
     {
         http_fetcher = FindObjectOfType<HttpFileFetcher>();
+        ui_manager = FindObjectOfType<UIManager>();
+        spawner = FindObjectOfType<SpawnSpheres>();
 
         Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/HoloLens Data");
         //File.Create(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/HoloLens Data/empty.txt");
+
+        averagePoints = new List<Vector3>();
     }
 
     void Update()
@@ -132,7 +141,7 @@ public class Reader : MonoBehaviour
         ////}
         ////spawner.ApplyToParticleSystem(pointCloud);
 
-        int maxPointsPerLeafNode = 32;
+        int maxPointsPerLeafNode = 16;
         tree = new KDTree(pointCloud, maxPointsPerLeafNode);
         //Debug.Log(tree.kdNodesCount);
 
@@ -146,12 +155,73 @@ public class Reader : MonoBehaviour
         //Debug.Log(tree.RootNode.positiveChild.Count);
         //SplitTreeToLOD(50);
         binaryReader.Close();
-        SpawnSpheres spawner = FindObjectOfType<SpawnSpheres>();
+        Debug.Log(tree.depth);
+        ui_manager.SetLODSlider(tree.depth);
+        //SpawnSpheres spawner = FindObjectOfType<SpawnSpheres>();
         if (spawner != null)
         {
             spawner.ApplyToParticleSystem(pointCloud);
         }
         yield return null;
     }
+
+
+    public void SplitTreeToLOD(int maxDepth)
+    {
+        averagePoints.Clear();
+
+        Queue<KDNode> nodeStack = new Queue<KDNode>();
+        List<KDNode> nodeList = new List<KDNode>();
+        Debug.Log(tree.RootNode.Count);
+        KDNode tempNode = tree.RootNode;
+        nodeStack.Enqueue(tempNode);
+        //Debug.Log(nodeStack);
+        while (nodeStack.Count > 0)
+        {
+            tempNode = nodeStack.Dequeue();
+
+
+            //Debug.Log(tempNode);
+            if (tempNode != null && tempNode.nodeDepth == maxDepth || tempNode.Leaf)
+            {
+                nodeList.Add(tempNode);
+                continue;
+            }
+            else if (tempNode != null && tempNode.nodeDepth < maxDepth && !tempNode.Leaf)
+            {
+
+                if (tempNode.negativeChild.Count != 0)
+                {
+
+                    nodeStack.Enqueue(tempNode.negativeChild);
+                }
+                if (tempNode.positiveChild.Count != 0)
+                {
+
+                    nodeStack.Enqueue(tempNode.positiveChild);
+                }
+            }
+        }
+
+
+        foreach (KDNode node in nodeList)
+        {
+            List<Vector3> pointsInNode = new List<Vector3>();
+            for (int i = node.start; i < node.end; i++)
+            {
+                pointsInNode.Add(pointCloud[tree.Permutation[i]]);
+            }
+            Vector3 averagePoint = new Vector3(
+                pointsInNode.Average(x => x.x),
+                pointsInNode.Average(x => x.y),
+                pointsInNode.Average(x => x.z));
+            //Debug.Log(averagePoint);
+            averagePoints.Add(averagePoint);
+            spawner.ApplyToParticleSystem(averagePoints);
+        }
+    }
+
+
+
 
 }

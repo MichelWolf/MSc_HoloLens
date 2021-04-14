@@ -174,6 +174,24 @@ public class SpawnSpheres : MonoBehaviour, IPunObservable
         ps.Pause();
     }
 
+    public void ApplyToParticleSystem(List<Vector3> positions)
+    {
+        var ps = GetComponent<ParticleSystem>();
+        if (ps == null)
+            return;
+
+        var particles = new ParticleSystem.Particle[positions.Count];
+
+        for (int i = 0; i < particles.Length; ++i)
+        {
+            particles[i].position = positions[i];
+            particles[i].startSize = particleSize;
+            particles[i].startColor = color;
+        }
+        ps.SetParticles(particles);
+        ps.Pause();
+    }
+
     public void PauseSpawn()
     {
         paused = !paused;

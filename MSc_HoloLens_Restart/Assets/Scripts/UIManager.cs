@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
@@ -49,6 +50,9 @@ public class UIManager : MonoBehaviour
     public GameObject enableAdjustButton;
     public GameObject disableAdjustButton;
 
+    public GameObject LODSliderObj;
+    public Slider LODSlider;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -65,6 +69,7 @@ public class UIManager : MonoBehaviour
         serverFileDropdown = serverFileDropdown_obj.GetComponent<TMP_Dropdown>();
         localFileDropdown = localFileDropdown_obj.GetComponent<TMP_Dropdown>();
         selectedFile_text = selectedFile_obj.GetComponent<TextMeshProUGUI>();
+        LODSlider = LODSliderObj.GetComponent<Slider>();
     }
 
     // Update is called once per frame
@@ -162,5 +167,27 @@ public class UIManager : MonoBehaviour
     {
         enableAdjustButton.SetActive(!adjust);
         disableAdjustButton.SetActive(adjust);
+    }
+
+    public void SetLODSlider(int max)
+    {
+        LODSlider.maxValue = max;
+    }
+
+    public void OnLODSliderChange()
+    {
+        reader.SplitTreeToLOD((int)LODSlider.value);
+    }
+
+    public void IncreaseLOD()
+    {
+        LODSlider.value += 1;
+        reader.SplitTreeToLOD((int)LODSlider.value);
+    }
+
+    public void DecreaseLOD()
+    {
+        LODSlider.value -= 1;
+        reader.SplitTreeToLOD((int)LODSlider.value);
     }
 }
