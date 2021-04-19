@@ -53,6 +53,8 @@ public class UIManager : MonoBehaviour
     public GameObject LODSliderObj;
     public Slider LODSlider;
 
+    public GameObject galacticCenter;
+
     // Start is called before the first frame update
     void Start()
     {

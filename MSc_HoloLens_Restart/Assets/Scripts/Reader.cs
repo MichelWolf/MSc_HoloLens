@@ -11,6 +11,14 @@ using System.Linq;
 
 public class Reader : MonoBehaviour
 {
+    //Create a custom struct and apply [Serializable] attribute to it
+    [Serializable]
+    public struct CelestialBody
+    {
+        public Vector3 position;
+        public int temperature;
+    }
+
     public TextAsset file;
     internal SpawnSpheres spawner;
     internal HttpFileFetcher http_fetcher;
@@ -24,6 +32,14 @@ public class Reader : MonoBehaviour
     protected string text = " "; // assigned to allow first line to be read below
 
     public Vector3[] pointCloud;
+
+    [SerializeField]
+    public CelestialBody[] celestialBodyCloud;
+    public List<int> spectralMIndex;
+    public List<int> spectralKIndex;
+    public List<int> spectralGIndex;
+    public List<int> spectralFIndex;
+    public List<int> spectralAIndex;
 
     internal KDTree tree;
 
@@ -73,7 +89,9 @@ public class Reader : MonoBehaviour
 
     public IEnumerator ReadFileCoroutine()
     {
-        pointCloud = new Vector3[binaryReader.ReadInt32()];
+        int arraySize = binaryReader.ReadInt32();
+        pointCloud = new Vector3[arraySize];
+        celestialBodyCloud = new CelestialBody[arraySize];
         //pointCloud = new Vector3[69593];
 
 
@@ -82,11 +100,45 @@ public class Reader : MonoBehaviour
         float inputX = 0;
         float inputY = 0;
         float inputZ = 0;
+        int inputTemp = 0;
+
+        float galCenX = binaryReader.ReadSingle();
+        float galCenY = binaryReader.ReadSingle();
+        float galCenZ = binaryReader.ReadSingle();
+        int galCenTemp = binaryReader.ReadInt32();
+        pointCloud[0] = new Vector3(galCenX, galCenY, galCenZ);
+        celestialBodyCloud[0].position = new Vector3(galCenX, galCenY, galCenZ);
+        celestialBodyCloud[0].temperature = galCenTemp;
+        ui_manager.galacticCenter.transform.localPosition = pointCloud[0];
         try
         {
-            int i = 0;
-            while ((inputX = binaryReader.ReadSingle()) != null && (inputY = binaryReader.ReadSingle()) != null && (inputZ = binaryReader.ReadSingle()) != null)
+            int i = 1;
+            while ((inputX = binaryReader.ReadSingle()) != null && (inputY = binaryReader.ReadSingle()) != null && (inputZ = binaryReader.ReadSingle()) != null && (inputTemp = binaryReader.ReadInt32()) != null)
             {
+                celestialBodyCloud[i].position = new Vector3(inputX, inputY, inputZ);
+                celestialBodyCloud[i].temperature = inputTemp;
+
+                if (inputTemp <= 3700)
+                {
+                    spectralMIndex.Add(i);
+                }
+                else if (inputTemp > 3700 && inputTemp <= 5200)
+                {
+                    spectralKIndex.Add(i);
+                }
+                else if (inputTemp > 5200 && inputTemp <= 6000)
+                {
+                    spectralGIndex.Add(i);
+                }
+                else if (inputTemp > 6000 && inputTemp <= 7500)
+                {
+                    spectralFIndex.Add(i);
+                }
+                else if (inputTemp > 7500 && inputTemp <= 10000)
+                {
+                    spectralAIndex.Add(i);
+                }
+
                 pointCloud[i] = new Vector3(inputX, inputY, inputZ);
                 i++;
             }
@@ -160,7 +212,13 @@ public class Reader : MonoBehaviour
         //SpawnSpheres spawner = FindObjectOfType<SpawnSpheres>();
         if (spawner != null)
         {
+            Debug.Log("applying to particle system");
             spawner.ApplyToParticleSystem(pointCloud);
+            spawner.ApplyToParticleSystem('M', spectralMIndex);
+            spawner.ApplyToParticleSystem('K', spectralKIndex);
+            spawner.ApplyToParticleSystem('G', spectralGIndex);
+            spawner.ApplyToParticleSystem('F', spectralFIndex);
+            spawner.ApplyToParticleSystem('A', spectralAIndex);
         }
         yield return null;
     }
