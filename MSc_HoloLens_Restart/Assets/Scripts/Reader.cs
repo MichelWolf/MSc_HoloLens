@@ -193,7 +193,7 @@ public class Reader : MonoBehaviour
         ////}
         ////spawner.ApplyToParticleSystem(pointCloud);
 
-        int maxPointsPerLeafNode = 16;
+        int maxPointsPerLeafNode = 1;
         tree = new KDTree(pointCloud, maxPointsPerLeafNode);
         //Debug.Log(tree.kdNodesCount);
 
@@ -209,11 +209,12 @@ public class Reader : MonoBehaviour
         binaryReader.Close();
         Debug.Log(tree.depth);
         ui_manager.SetLODSlider(tree.depth);
+        Debug.Log(GetNumberOfLeafNodes(tree.RootNode));
         //SpawnSpheres spawner = FindObjectOfType<SpawnSpheres>();
         if (spawner != null)
         {
             Debug.Log("applying to particle system");
-            spawner.ApplyToParticleSystem(pointCloud);
+            //spawner.ApplyToParticleSystem(pointCloud);
             spawner.ApplyToParticleSystem('M', spectralMIndex);
             spawner.ApplyToParticleSystem('K', spectralKIndex);
             spawner.ApplyToParticleSystem('G', spectralGIndex);
@@ -223,60 +224,78 @@ public class Reader : MonoBehaviour
         yield return null;
     }
 
+    public int GetNumberOfLeafNodes(KDNode node)
+    {
+        //int count = 0;
+        if(node == null)
+        {
+            return 0;
+        }
+        if(node.Leaf)
+        {
+            return 1;
+        }
+        else
+        {
+            return GetNumberOfLeafNodes(node.negativeChild) + GetNumberOfLeafNodes(node.positiveChild);
+        }
+    }
 
     public void SplitTreeToLOD(int maxDepth)
     {
-        averagePoints.Clear();
+        
 
-        Queue<KDNode> nodeStack = new Queue<KDNode>();
-        List<KDNode> nodeList = new List<KDNode>();
-        Debug.Log(tree.RootNode.Count);
-        KDNode tempNode = tree.RootNode;
-        nodeStack.Enqueue(tempNode);
-        //Debug.Log(nodeStack);
-        while (nodeStack.Count > 0)
-        {
-            tempNode = nodeStack.Dequeue();
+        //averagePoints.Clear();
 
-
-            //Debug.Log(tempNode);
-            if (tempNode != null && tempNode.nodeDepth == maxDepth || tempNode.Leaf)
-            {
-                nodeList.Add(tempNode);
-                continue;
-            }
-            else if (tempNode != null && tempNode.nodeDepth < maxDepth && !tempNode.Leaf)
-            {
-
-                if (tempNode.negativeChild.Count != 0)
-                {
-
-                    nodeStack.Enqueue(tempNode.negativeChild);
-                }
-                if (tempNode.positiveChild.Count != 0)
-                {
-
-                    nodeStack.Enqueue(tempNode.positiveChild);
-                }
-            }
-        }
+        //Queue<KDNode> nodeStack = new Queue<KDNode>();
+        //List<KDNode> nodeList = new List<KDNode>();
+        //Debug.Log(tree.RootNode.Count);
+        //KDNode tempNode = tree.RootNode;
+        //nodeStack.Enqueue(tempNode);
+        ////Debug.Log(nodeStack);
+        //while (nodeStack.Count > 0)
+        //{
+        //    tempNode = nodeStack.Dequeue();
 
 
-        foreach (KDNode node in nodeList)
-        {
-            List<Vector3> pointsInNode = new List<Vector3>();
-            for (int i = node.start; i < node.end; i++)
-            {
-                pointsInNode.Add(pointCloud[tree.Permutation[i]]);
-            }
-            Vector3 averagePoint = new Vector3(
-                pointsInNode.Average(x => x.x),
-                pointsInNode.Average(x => x.y),
-                pointsInNode.Average(x => x.z));
-            //Debug.Log(averagePoint);
-            averagePoints.Add(averagePoint);
-            spawner.ApplyToParticleSystem(averagePoints);
-        }
+        //    //Debug.Log(tempNode);
+        //    if (tempNode != null && tempNode.nodeDepth == maxDepth || tempNode.Leaf)
+        //    {
+        //        nodeList.Add(tempNode);
+        //        continue;
+        //    }
+        //    else if (tempNode != null && tempNode.nodeDepth < maxDepth && !tempNode.Leaf)
+        //    {
+
+        //        if (tempNode.negativeChild.Count != 0)
+        //        {
+
+        //            nodeStack.Enqueue(tempNode.negativeChild);
+        //        }
+        //        if (tempNode.positiveChild.Count != 0)
+        //        {
+
+        //            nodeStack.Enqueue(tempNode.positiveChild);
+        //        }
+        //    }
+        //}
+
+
+        //foreach (KDNode node in nodeList)
+        //{
+        //    List<Vector3> pointsInNode = new List<Vector3>();
+        //    for (int i = node.start; i < node.end; i++)
+        //    {
+        //        pointsInNode.Add(pointCloud[tree.Permutation[i]]);
+        //    }
+        //    Vector3 averagePoint = new Vector3(
+        //        pointsInNode.Average(x => x.x),
+        //        pointsInNode.Average(x => x.y),
+        //        pointsInNode.Average(x => x.z));
+        //    //Debug.Log(averagePoint);
+        //    averagePoints.Add(averagePoint);
+        //    spawner.ApplyToParticleSystem(averagePoints);
+        //}
     }
 
 

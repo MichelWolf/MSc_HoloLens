@@ -9,24 +9,41 @@ public class PlacementManager : MonoBehaviour, IPunObservable
     internal UIManager ui_manager;
     public GameObject parentCube;
     public GameObject visualCube;
+    internal Vector3 visualScale;
 
     public GameObject anchor;
+
+    internal SpawnSpheres spawner;
 
     PhotonView photonView;
     // Start is called before the first frame update
     void Start()
     {
+        visualScale = new Vector3(0.5f, 0.5f, 0.5f);
         ui_manager = FindObjectOfType<UIManager>();
         parentCube.SetActive(true);
         visualCube.SetActive(false);
 
         photonView = GetComponent<PhotonView>();
+        spawner = FindObjectOfType<SpawnSpheres>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+        if(visualCube.transform.localScale != visualScale)
+        {
+            visualScale = visualCube.transform.localScale;
+            if(spawner == null)
+            {
+                spawner = FindObjectOfType<SpawnSpheres>();
+            }
+            spawner.particleSystemM.transform.localScale = visualScale;
+            spawner.particleSystemK.transform.localScale = visualScale;
+            spawner.particleSystemG.transform.localScale = visualScale;
+            spawner.particleSystemF.transform.localScale = visualScale;
+            spawner.particleSystemA.transform.localScale = visualScale;
+        }
     }
 
     public void EnableAdjustment()
@@ -88,10 +105,10 @@ public class PlacementManager : MonoBehaviour, IPunObservable
     {
         if (stream.IsWriting == true)
         {
-
             stream.SendNext((Vector3)visualCube.transform.localPosition);
             stream.SendNext((Quaternion)visualCube.transform.localRotation);
             stream.SendNext((Vector3)visualCube.transform.localScale);
+           
         }
         else
         {
