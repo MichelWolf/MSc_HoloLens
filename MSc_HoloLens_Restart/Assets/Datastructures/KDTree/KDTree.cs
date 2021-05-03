@@ -29,6 +29,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 using UnityEngine;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace DataStructures.ViliWonka.KDTree
 {
@@ -40,6 +43,9 @@ namespace DataStructures.ViliWonka.KDTree
 
         public Vector3[] Points { get { return points; } } // points on which kd-tree will build on. This array will stay unchanged when re/building kdtree!
         private Vector3[] points;
+
+        public Reader reader;
+
 
         public int[] Permutation { get { return permutation; } } // index aray, that will be permuted
         private int[] permutation;
@@ -65,7 +71,7 @@ namespace DataStructures.ViliWonka.KDTree
             this.maxPointsPerLeafNode = maxPointsPerLeafNode;
         }
 
-        public KDTree(Vector3[] points, int maxPointsPerLeafNode = 32)
+        public KDTree(Vector3[] points, int maxPointsPerLeafNode = 32, Reader read = null)
         {
 
             this.points = points;
@@ -75,7 +81,7 @@ namespace DataStructures.ViliWonka.KDTree
             kdNodesStack = new KDNode[64];
 
             this.maxPointsPerLeafNode = maxPointsPerLeafNode;
-
+            this.reader = read;
             Rebuild();
         }
 
@@ -144,6 +150,21 @@ namespace DataStructures.ViliWonka.KDTree
             RootNode.start = 0;
             RootNode.end = Count;
             RootNode.nodeDepth = depth;
+            //List<Vector3> average = new List<Vector3>();
+            //List<int> averageTempList = new List<int>();
+            //for (int i = 0; i < Count; i++)
+            //{
+            //    average.Add(points[permutation[i]]);
+            //    averageTempList.Add(reader.celestialBodyCloud[i].temperature);
+            //}
+
+            //RootNode.averagePositionOfNodes  = new Vector3(
+            //            average.Average(x => x.x),
+            //            average.Average(x => x.y),
+            //            average.Average(x => x.z));
+
+            //RootNode.averageTempOfNodes = (int)averageTempList.Average();
+
             SplitNode(RootNode, depth + 1);
 
 
@@ -350,6 +371,24 @@ namespace DataStructures.ViliWonka.KDTree
             negNode.start = parent.start;
             negNode.end = splittingIndex;
             negNode.nodeDepth = NodeDepth;
+
+            //List<Vector3> average = new List<Vector3>();
+            //List<int> averageTempList = new List<int>();
+            //for (int i = parent.start; i < splittingIndex; i++)
+            //{
+            //    average.Add(points[permutation[i]]);
+            //    averageTempList.Add(reader.celestialBodyCloud[i].temperature);
+            //}
+            //if (average.Count > 0 && averageTempList.Count > 0)
+            //{
+
+            //    negNode.averagePositionOfNodes = new Vector3(
+            //            average.Average(x => x.x),
+            //            average.Average(x => x.y),
+            //            average.Average(x => x.z));
+            //    negNode.averageTempOfNodes = (int)averageTempList.Average();
+            //}
+
             parent.negativeChild = negNode;
 
             // Positive / Right node
@@ -362,6 +401,24 @@ namespace DataStructures.ViliWonka.KDTree
             posNode.start = splittingIndex;
             posNode.end = parent.end;
             posNode.nodeDepth = NodeDepth;
+
+            //average.Clear();
+            //averageTempList.Clear();
+            //for (int i = splittingIndex; i < parent.end; i++)
+            //{
+            //    average.Add(points[permutation[i]]);
+            //    averageTempList.Add(reader.celestialBodyCloud[i].temperature);
+            //}
+            //if (average.Count > 0 && averageTempList.Count > 0)
+            //{
+
+            //    posNode.averagePositionOfNodes = new Vector3(
+            //            average.Average(x => x.x),
+            //            average.Average(x => x.y),
+            //            average.Average(x => x.z));
+            //    posNode.averageTempOfNodes = (int)averageTempList.Average();
+            //}
+
             parent.positiveChild = posNode;
 
             // check if we are actually splitting it anything
@@ -506,7 +563,6 @@ namespace DataStructures.ViliWonka.KDTree
         /// <returns></returns>
         bool ContinueSplit(KDNode node)
         {
-
             return (node.Count > maxPointsPerLeafNode);
         }
 
@@ -523,7 +579,66 @@ namespace DataStructures.ViliWonka.KDTree
             }
             return maxDepth;
         }
-    }
 
+        public void SetRootNodeVecAndTemp()
+        {
+            Tuple<Vector3, int> result = CalculateVecAndTemp(RootNode);
+        }
+        
+        public Tuple<Vector3,int> CalculateVecAndTemp(KDNode node)
+        {
+            if(node.Leaf)
+            {
+                List<Vector3> average = new List<Vector3>();
+                List<int> averageTempList = new List<int>();
+                for (int i = node.start; i < node.end; i++)
+                {
+                    average.Add(points[permutation[i]]);
+                    averageTempList.Add(reader.celestialBodyCloud[permutation[i]].temperature);
+                }
+                if (average.Count > 0 && averageTempList.Count > 0)
+                {
+                    node.averagePositionOfNodes = new Vector3(
+                            average.Average(x => x.x),
+                            average.Average(x => x.y),
+                            average.Average(x => x.z));
+                    node.averageTempOfNodes = (int)averageTempList.Average();
+                }
+                return new Tuple<Vector3, int>(node.averagePositionOfNodes, node.averageTempOfNodes);
+            }
+            else
+            {
+                Tuple<Vector3, int> resultNegChild = null;
+                Tuple<Vector3, int> resultPosChild = null;
+                if (node.negativeChild != null)
+                { 
+                    resultNegChild = CalculateVecAndTemp(node.negativeChild);
+                }
+                if(node.positiveChild != null)
+                {
+                    resultPosChild = CalculateVecAndTemp(node.positiveChild);
+                }
 
+                //Calculation if node has both children
+                if(resultNegChild != null && resultPosChild != null)
+                {
+                    node.averagePositionOfNodes = (resultNegChild.Item1 + resultPosChild.Item1) / 2f;
+                    node.averageTempOfNodes = Mathf.FloorToInt((resultNegChild.Item2 + resultPosChild.Item2) / 2f);
+                }
+                //Calculation if node only has a negative child
+                else if(resultNegChild != null && resultPosChild == null)
+                {
+                    node.averagePositionOfNodes = resultNegChild.Item1;
+                    node.averageTempOfNodes = resultNegChild.Item2;
+                }
+                //Calculation if node only has a positive child
+                else if (resultNegChild == null && resultPosChild != null)
+                {
+                    node.averagePositionOfNodes = resultPosChild.Item1;
+                    node.averageTempOfNodes = resultPosChild.Item2;
+                }
+                return new Tuple<Vector3, int>(node.averagePositionOfNodes, node.averageTempOfNodes);
+            }
+        }
+    }    
 }

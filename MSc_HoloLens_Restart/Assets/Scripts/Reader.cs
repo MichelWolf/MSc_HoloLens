@@ -12,12 +12,7 @@ using System.Linq;
 public class Reader : MonoBehaviour
 {
     //Create a custom struct and apply [Serializable] attribute to it
-    [Serializable]
-    public struct CelestialBody
-    {
-        public Vector3 position;
-        public int temperature;
-    }
+    
 
     public TextAsset file;
     internal SpawnSpheres spawner;
@@ -40,6 +35,12 @@ public class Reader : MonoBehaviour
     public List<int> spectralGIndex;
     public List<int> spectralFIndex;
     public List<int> spectralAIndex;
+
+    public List<Vector3> averageSpectralM;
+    public List<Vector3> averageSpectralK;
+    public List<Vector3> averageSpectralG;
+    public List<Vector3> averageSpectralF;
+    public List<Vector3> averageSpectralA;
 
     internal KDTree tree;
 
@@ -107,6 +108,7 @@ public class Reader : MonoBehaviour
         float galCenZ = binaryReader.ReadSingle();
         int galCenTemp = binaryReader.ReadInt32();
         pointCloud[0] = new Vector3(galCenX, galCenY, galCenZ);
+        celestialBodyCloud[0] = new CelestialBody();
         celestialBodyCloud[0].position = new Vector3(galCenX, galCenY, galCenZ);
         celestialBodyCloud[0].temperature = galCenTemp;
         ui_manager.galacticCenter.transform.localPosition = pointCloud[0];
@@ -115,8 +117,11 @@ public class Reader : MonoBehaviour
             int i = 1;
             while ((inputX = binaryReader.ReadSingle()) != null && (inputY = binaryReader.ReadSingle()) != null && (inputZ = binaryReader.ReadSingle()) != null && (inputTemp = binaryReader.ReadInt32()) != null)
             {
-                celestialBodyCloud[i].position = new Vector3(inputX, inputY, inputZ);
-                celestialBodyCloud[i].temperature = inputTemp;
+                celestialBodyCloud[i] = new CelestialBody
+                {
+                    position = new Vector3(inputX, inputY, inputZ),
+                    temperature = inputTemp
+                };
 
                 if (inputTemp <= 3700)
                 {
@@ -147,7 +152,7 @@ public class Reader : MonoBehaviour
         {
             Debug.Log("Ende der Datei erreicht: " + e.GetType().Name);
         }
-
+        
         //double dX = binaryReader.ReadDouble();
         //double dY = binaryReader.ReadDouble();
         //double dZ = binaryReader.ReadDouble();
@@ -194,22 +199,30 @@ public class Reader : MonoBehaviour
         ////spawner.ApplyToParticleSystem(pointCloud);
 
         int maxPointsPerLeafNode = 1;
-        tree = new KDTree(pointCloud, maxPointsPerLeafNode);
-        //Debug.Log(tree.kdNodesCount);
-
-        //Debug.Log(tree.RootNode.bounds.size);
-        //Debug.Log(tree.RootNode.negativeChild.bounds.min);
-        //Debug.Log(tree.RootNode.negativeChild.bounds.max);
-        //Debug.Log(tree.RootNode.negativeChild.Count);
-        //Debug.Log("");
-        //Debug.Log(tree.RootNode.positiveChild.bounds.min);
-        //Debug.Log(tree.RootNode.positiveChild.bounds.max);
-        //Debug.Log(tree.RootNode.positiveChild.Count);
-        //SplitTreeToLOD(50);
-        binaryReader.Close();
-        Debug.Log(tree.depth);
+        tree = new KDTree(pointCloud, maxPointsPerLeafNode, this);
+        tree.SetRootNodeVecAndTemp();
+        Debug.Log(tree.kdNodesCount);
         ui_manager.SetLODSlider(tree.depth);
-        Debug.Log(GetNumberOfLeafNodes(tree.RootNode));
+        
+        Debug.Log("Root X: " + tree.RootNode.averagePositionOfNodes.x);
+        Debug.Log("Root Y: " + tree.RootNode.averagePositionOfNodes.y);
+        Debug.Log("Root Z: " + tree.RootNode.averagePositionOfNodes.z);
+        Debug.Log("Root Temp: " + tree.RootNode.averageTempOfNodes);
+
+        Debug.Log("RootNeg X: " + tree.RootNode.negativeChild.averagePositionOfNodes.x);
+        Debug.Log("RootNeg Y: " + tree.RootNode.negativeChild.averagePositionOfNodes.y);
+        Debug.Log("RootNeg Z: " + tree.RootNode.negativeChild.averagePositionOfNodes.z);
+        Debug.Log("RootNeg Temp: " + tree.RootNode.negativeChild.averageTempOfNodes);
+
+        Debug.Log("RootPos X: " + tree.RootNode.positiveChild.averagePositionOfNodes.x);
+        Debug.Log("RootPos Y: " + tree.RootNode.positiveChild.averagePositionOfNodes.y);
+        Debug.Log("RootPos Z: " + tree.RootNode.positiveChild.averagePositionOfNodes.z);
+        Debug.Log("RootPos Temp: " + tree.RootNode.positiveChild.averageTempOfNodes);
+
+        binaryReader.Close();
+        //Debug.Log(tree.depth);
+        //ui_manager.SetLODSlider(tree.depth);
+        //Debug.Log(GetNumberOfLeafNodes(tree.RootNode));
         //SpawnSpheres spawner = FindObjectOfType<SpawnSpheres>();
         if (spawner != null)
         {
@@ -221,6 +234,7 @@ public class Reader : MonoBehaviour
             spawner.ApplyToParticleSystem('F', spectralFIndex);
             spawner.ApplyToParticleSystem('A', spectralAIndex);
         }
+        //Array.Sort(celestialBodyCloud, new CelestialBodyComparerX());
         yield return null;
     }
 
@@ -243,62 +257,172 @@ public class Reader : MonoBehaviour
 
     public void SplitTreeToLOD(int maxDepth)
     {
-        
+        averagePoints.Clear();
 
-        //averagePoints.Clear();
-
-        //Queue<KDNode> nodeStack = new Queue<KDNode>();
-        //List<KDNode> nodeList = new List<KDNode>();
+        Queue<KDNode> nodeStack = new Queue<KDNode>();
+        List<KDNode> nodeList = new List<KDNode>();
         //Debug.Log(tree.RootNode.Count);
-        //KDNode tempNode = tree.RootNode;
-        //nodeStack.Enqueue(tempNode);
-        ////Debug.Log(nodeStack);
-        //while (nodeStack.Count > 0)
-        //{
-        //    tempNode = nodeStack.Dequeue();
+        KDNode tempNode = tree.RootNode;
+        nodeStack.Enqueue(tempNode);
+        //Debug.Log(nodeStack);
+        while (nodeStack.Count > 0)
+        {
+            tempNode = nodeStack.Dequeue();
 
 
-        //    //Debug.Log(tempNode);
-        //    if (tempNode != null && tempNode.nodeDepth == maxDepth || tempNode.Leaf)
-        //    {
-        //        nodeList.Add(tempNode);
-        //        continue;
-        //    }
-        //    else if (tempNode != null && tempNode.nodeDepth < maxDepth && !tempNode.Leaf)
-        //    {
+            //Debug.Log(tempNode);
+            if (tempNode != null && tempNode.nodeDepth == maxDepth || tempNode.Leaf)
+            {
+                nodeList.Add(tempNode);
+                continue;
+            }
+            else if (tempNode != null && tempNode.nodeDepth < maxDepth && !tempNode.Leaf)
+            {
 
-        //        if (tempNode.negativeChild.Count != 0)
-        //        {
+                if (tempNode.negativeChild.Count != 0)
+                {
 
-        //            nodeStack.Enqueue(tempNode.negativeChild);
-        //        }
-        //        if (tempNode.positiveChild.Count != 0)
-        //        {
+                    nodeStack.Enqueue(tempNode.negativeChild);
+                }
+                if (tempNode.positiveChild.Count != 0)
+                {
 
-        //            nodeStack.Enqueue(tempNode.positiveChild);
-        //        }
-        //    }
-        //}
+                    nodeStack.Enqueue(tempNode.positiveChild);
+                }
+            }
+        }
+        Debug.Log(nodeList.Count);
 
+        averageSpectralM = new List<Vector3>();
+        averageSpectralK = new List<Vector3>();
+        averageSpectralG = new List<Vector3>();
+        averageSpectralF = new List<Vector3>();
+        averageSpectralA = new List<Vector3>();
 
-        //foreach (KDNode node in nodeList)
-        //{
-        //    List<Vector3> pointsInNode = new List<Vector3>();
-        //    for (int i = node.start; i < node.end; i++)
-        //    {
-        //        pointsInNode.Add(pointCloud[tree.Permutation[i]]);
-        //    }
-        //    Vector3 averagePoint = new Vector3(
-        //        pointsInNode.Average(x => x.x),
-        //        pointsInNode.Average(x => x.y),
-        //        pointsInNode.Average(x => x.z));
-        //    //Debug.Log(averagePoint);
-        //    averagePoints.Add(averagePoint);
-        //    spawner.ApplyToParticleSystem(averagePoints);
-        //}
+        foreach (KDNode node in nodeList)
+        {
+            //Debug.Log(nodeList[0].Count);
+            if (node.averageTempOfNodes <= 3700)
+            {
+                averageSpectralM.Add(node.averagePositionOfNodes);
+            }
+            else if (node.averageTempOfNodes > 3700 && node.averageTempOfNodes <= 5200)
+            {
+                averageSpectralK.Add(node.averagePositionOfNodes);
+            }
+            else if (node.averageTempOfNodes > 5200 && node.averageTempOfNodes <= 6000)
+            {
+                averageSpectralG.Add(node.averagePositionOfNodes);
+            }
+            else if (node.averageTempOfNodes > 6000 && node.averageTempOfNodes <= 7500)
+            {
+                averageSpectralF.Add(node.averagePositionOfNodes);
+            }
+            else if (node.averageTempOfNodes > 7500 && node.averageTempOfNodes <= 10000)
+            {
+                averageSpectralA.Add(node.averagePositionOfNodes);
+            }
+            //pointsToSpawn.Add(node.averagePositionOfNodes);
+            
+        //List<Vector3> pointsInNode = new List<Vector3>();
+            //for (int i = node.start; i < node.end; i++)
+            //{
+            //    pointsInNode.Add(pointCloud[tree.Permutation[i]]);
+            //}
+            //Vector3 averagePoint = new Vector3(
+            //    pointsInNode.Average(x => x.x),
+            //    pointsInNode.Average(x => x.y),
+            //    pointsInNode.Average(x => x.z));
+            //Debug.Log(averagePoint);
+            //averagePoints.Add(averagePoint);
+        }
+        spawner.ApplyToParticleSystem('M', averageSpectralM);
+        spawner.ApplyToParticleSystem('K', averageSpectralK);
+        spawner.ApplyToParticleSystem('G', averageSpectralG);
+        spawner.ApplyToParticleSystem('F', averageSpectralF);
+        spawner.ApplyToParticleSystem('A', averageSpectralA);
+    }
+
+    public void SendToParticleSystem(char spectralClass)
+    {
+        switch(spectralClass)
+        {
+            case 'M':
+                spawner.ApplyToParticleSystem('M', averageSpectralM);
+                break;
+            case 'K':
+                spawner.ApplyToParticleSystem('K', averageSpectralK);
+                break;
+            case 'G':
+                spawner.ApplyToParticleSystem('G', averageSpectralG);
+                break;
+            case 'F':
+                spawner.ApplyToParticleSystem('F', averageSpectralF);
+                break;
+            case 'A':
+                spawner.ApplyToParticleSystem('A', averageSpectralA);
+                break;
+        }
+    }
+
+    public void ToggleSpectralClass(int spectralClass)
+    {
+        switch (spectralClass)
+        {
+            case 0:
+                spawner.particleSystemM.gameObject.SetActive(!spawner.particleSystemM.gameObject.activeSelf);
+                spawner.ApplyToParticleSystem('M', averageSpectralM);
+                break;
+            case 1:
+                Debug.Log("toggle 1");
+                spawner.particleSystemK.gameObject.SetActive(!spawner.particleSystemK.gameObject.activeSelf);
+                spawner.ApplyToParticleSystem('K', averageSpectralK);
+                break;
+            case 2:
+                spawner.particleSystemG.gameObject.SetActive(!spawner.particleSystemG.gameObject.activeSelf);
+                spawner.ApplyToParticleSystem('G', averageSpectralG);
+                break;
+            case 3:
+                spawner.particleSystemF.gameObject.SetActive(!spawner.particleSystemF.gameObject.activeSelf);
+                spawner.ApplyToParticleSystem('F', averageSpectralF);
+                break;
+            case 4:
+                spawner.particleSystemA.gameObject.SetActive(!spawner.particleSystemA.gameObject.activeSelf);
+                spawner.ApplyToParticleSystem('A', averageSpectralA);
+                break;
+        }
     }
 
 
+}
 
+[Serializable]
+public class CelestialBody
+{
+    public Vector3 position;
+    public int temperature;
+}
 
+public class CelestialBodyComparerX : IComparer
+{
+    public int Compare(object x, object y)
+    {
+        return ((CelestialBody)x).position.x.CompareTo(((CelestialBody)y).position.x);
+    }
+}
+
+public class CelestialBodyComparerY : IComparer
+{
+    public int Compare(object x, object y)
+    {
+        return ((CelestialBody)x).position.y.CompareTo(((CelestialBody)y).position.y);
+    }
+}
+
+public class CelestialBodyComparerZ : IComparer
+{
+    public int Compare(object x, object y)
+    {
+        return ((CelestialBody)x).position.z.CompareTo(((CelestialBody)y).position.z);
+    }
 }

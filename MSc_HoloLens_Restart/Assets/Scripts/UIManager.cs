@@ -55,6 +55,12 @@ public class UIManager : MonoBehaviour
 
     public GameObject galacticCenter;
 
+    public Image spectralImageM;
+    public Image spectralImageK;
+    public Image spectralImageG;
+    public Image spectralImageF;
+    public Image spectralImageA;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -72,6 +78,7 @@ public class UIManager : MonoBehaviour
         localFileDropdown = localFileDropdown_obj.GetComponent<TMP_Dropdown>();
         selectedFile_text = selectedFile_obj.GetComponent<TextMeshProUGUI>();
         LODSlider = LODSliderObj.GetComponent<Slider>();
+        SetLegendColor();
     }
 
     // Update is called once per frame
@@ -191,5 +198,15 @@ public class UIManager : MonoBehaviour
     {
         LODSlider.value -= 1;
         reader.SplitTreeToLOD((int)LODSlider.value);
+    }
+
+    public void SetLegendColor()
+    {
+        SpawnSpheres spawner = FindObjectOfType<SpawnSpheres>();
+        spectralImageM.color = spawner.spectralColorM;
+        spectralImageK.color = spawner.spectralColorK;
+        spectralImageG.color = spawner.spectralColorG;
+        spectralImageF.color = spawner.spectralColorF;
+        spectralImageA.color = spawner.spectralColorA;
     }
 }

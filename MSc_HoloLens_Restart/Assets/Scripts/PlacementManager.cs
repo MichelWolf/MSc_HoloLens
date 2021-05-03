@@ -15,6 +15,12 @@ public class PlacementManager : MonoBehaviour, IPunObservable
 
     internal SpawnSpheres spawner;
 
+    Camera mainCam;
+
+    public int latestLODValue = 0;
+
+    public bool dynamicLOD = true;
+
     PhotonView photonView;
     // Start is called before the first frame update
     void Start()
@@ -26,6 +32,7 @@ public class PlacementManager : MonoBehaviour, IPunObservable
 
         photonView = GetComponent<PhotonView>();
         spawner = FindObjectOfType<SpawnSpheres>();
+        mainCam = Camera.main;
     }
 
     // Update is called once per frame
@@ -43,6 +50,20 @@ public class PlacementManager : MonoBehaviour, IPunObservable
             spawner.particleSystemG.transform.localScale = visualScale;
             spawner.particleSystemF.transform.localScale = visualScale;
             spawner.particleSystemA.transform.localScale = visualScale;
+        }
+
+        if (dynamicLOD && FindObjectOfType<Reader>().tree != null)
+        {
+            float dist = Vector3.Distance(visualCube.transform.position, mainCam.transform.position);
+            float t = dist / 2f;
+
+            int lodValue = Mathf.FloorToInt(ui_manager.LODSlider.maxValue - (ui_manager.LODSlider.maxValue * t));
+            if(lodValue != latestLODValue)
+            {
+                latestLODValue = lodValue;
+                ui_manager.LODSlider.value = lodValue;
+                FindObjectOfType<Reader>().SplitTreeToLOD(lodValue);
+            }
         }
     }
 
@@ -86,6 +107,11 @@ public class PlacementManager : MonoBehaviour, IPunObservable
             c.enabled = true;
         }
         anchor.SetActive(false);
+    }
+
+    public void ToggleDynamicLOD()
+    {
+        dynamicLOD = !dynamicLOD;
     }
 
     public void TakeOwnershipOfView()

@@ -223,9 +223,9 @@ public class SpawnSpheres : MonoBehaviour, IPunObservable
 
     public void ApplyToParticleSystem(List<Vector3> positions)
     {
-        var ps = GetComponent<ParticleSystem>();
-        if (ps == null)
-            return;
+        //var ps = GetComponent<ParticleSystem>();
+        //if (ps == null)
+        //    return;
 
         var particles = new ParticleSystem.Particle[positions.Count];
 
@@ -235,8 +235,8 @@ public class SpawnSpheres : MonoBehaviour, IPunObservable
             particles[i].startSize = particleSize;
             particles[i].startColor = spectralColorM;
         }
-        ps.SetParticles(particles);
-        ps.Pause();
+        particleSystemA.SetParticles(particles);
+        particleSystemA.Pause();
     }
 
     public void ApplyToParticleSystem(char spectralClass, List<int> indices)
@@ -245,7 +245,7 @@ public class SpawnSpheres : MonoBehaviour, IPunObservable
 
         for (int i = 0; i < particles.Length; ++i)
         {
-            particles[i].position = reader.celestialBodyCloud[i].position;
+            particles[i].position = reader.celestialBodyCloud[indices[i]].position;
             particles[i].startSize = particleSize;
             //particles[i].startColor = spectralColorM;
         }
@@ -281,6 +281,63 @@ public class SpawnSpheres : MonoBehaviour, IPunObservable
         }
     }
 
+    public void ApplyToParticleSystem(char spectralClass, List<Vector3> points)
+    {
+        var particles = new ParticleSystem.Particle[points.Count];
+
+        for (int i = 0; i < particles.Length; ++i)
+        {
+            particles[i].position = points[i];
+            particles[i].startSize = particleSize;
+            //particles[i].startColor = spectralColorM;
+        }
+        switch (spectralClass)
+        {
+            case 'M':
+                if (particleSystemM != null)
+                {
+                    particleSystemM.SetParticles(particles);
+                    particleSystemM.transform.gameObject.GetComponent<ParticleSystemRenderer>().material.color = spectralColorM;
+                    particleSystemM.Pause();
+                }
+                break;
+            case 'K':
+                if (particleSystemK != null)
+                {
+                    particleSystemK.SetParticles(particles);
+                    particleSystemK.transform.gameObject.GetComponent<ParticleSystemRenderer>().material.color = spectralColorK;
+                    particleSystemK.Pause();
+                }
+                break;
+            case 'G':
+                if (particleSystemG != null)
+                {
+                    particleSystemG.SetParticles(particles);
+                    particleSystemG.transform.gameObject.GetComponent<ParticleSystemRenderer>().material.color = spectralColorG;
+                    particleSystemG.Pause();
+                }
+                break;
+            case 'F':
+                if (particleSystemF != null)
+                {
+                    particleSystemF.SetParticles(particles);
+                    particleSystemF.transform.gameObject.GetComponent<ParticleSystemRenderer>().material.color = spectralColorF;
+                    particleSystemF.Pause();
+                }
+                break;
+            case 'A':
+                if (particleSystemA != null)
+                {
+                    particleSystemA.SetParticles(particles);
+                    particleSystemA.transform.gameObject.GetComponent<ParticleSystemRenderer>().material.color = spectralColorA;
+                    particleSystemA.Pause();
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
     public void PauseSpawn()
     {
         paused = !paused;
@@ -310,7 +367,7 @@ public class SpawnSpheres : MonoBehaviour, IPunObservable
         //query.Interval(tree, min, max, results);
 
         // closest point query
-        query.ClosestPoint(FindObjectOfType<Reader>().tree, position, results);
+        //query.ClosestPoint(FindObjectOfType<Reader>().tree, position, results);
 
         int index = 0;
         for (int i = 0; i < results.Count; i++)
