@@ -152,51 +152,6 @@ public class Reader : MonoBehaviour
         {
             Debug.Log("Ende der Datei erreicht: " + e.GetType().Name);
         }
-        
-        //double dX = binaryReader.ReadDouble();
-        //double dY = binaryReader.ReadDouble();
-        //double dZ = binaryReader.ReadDouble();
-        //Debug.Log(dX);
-        //Debug.Log(dY);
-        //Debug.Log(dZ);
-        //string textX = reader.ReadLine();
-        //string textY = reader.ReadLine();
-        //string textZ = reader.ReadLine();
-        //float x = 0;
-        //float y = 0;
-        //float z = 0;
-        //int i = 0;
-        ////if (textX != null && textY != null && textZ != null)
-        ////{
-        ////    x = float.Parse(textX, NumberStyles.Any, ci);
-        ////    y = float.Parse(textY, NumberStyles.Any, ci);
-        ////    z = float.Parse(textZ, NumberStyles.Any, ci);
-
-        ////    pointCloud[i] = new Vector3(x, y, z);
-        ////    i++;
-        ////}
-
-        ////while (textX != null && textY != null && textZ != null)
-        ////{
-
-        ////    textX = reader.ReadLine();
-        ////    textY = reader.ReadLine();
-        ////    textZ = reader.ReadLine();
-
-        ////    if (textX != null && textY != null && textZ != null)
-        ////    {
-
-        ////        x = float.Parse(textX, NumberStyles.Any, ci);
-        ////        y = float.Parse(textY, NumberStyles.Any, ci);
-        ////        z = float.Parse(textZ, NumberStyles.Any, ci);
-
-
-
-        ////        pointCloud[i] = new Vector3(x, y, z);
-        ////        i++;
-        ////    }
-        ////}
-        ////spawner.ApplyToParticleSystem(pointCloud);
 
         int maxPointsPerLeafNode = 1;
         tree = new KDTree(pointCloud, maxPointsPerLeafNode, this);
@@ -228,11 +183,11 @@ public class Reader : MonoBehaviour
         {
             Debug.Log("applying to particle system");
             //spawner.ApplyToParticleSystem(pointCloud);
-            spawner.ApplyToParticleSystem('M', spectralMIndex);
-            spawner.ApplyToParticleSystem('K', spectralKIndex);
-            spawner.ApplyToParticleSystem('G', spectralGIndex);
-            spawner.ApplyToParticleSystem('F', spectralFIndex);
-            spawner.ApplyToParticleSystem('A', spectralAIndex);
+            //spawner.ApplyToParticleSystem('M', spectralMIndex);
+            //spawner.ApplyToParticleSystem('K', spectralKIndex);
+            //spawner.ApplyToParticleSystem('G', spectralGIndex);
+            //spawner.ApplyToParticleSystem('F', spectralFIndex);
+            //spawner.ApplyToParticleSystem('A', spectralAIndex);
         }
         //Array.Sort(celestialBodyCloud, new CelestialBodyComparerX());
         yield return null;
@@ -341,6 +296,8 @@ public class Reader : MonoBehaviour
         spawner.ApplyToParticleSystem('G', averageSpectralG);
         spawner.ApplyToParticleSystem('F', averageSpectralF);
         spawner.ApplyToParticleSystem('A', averageSpectralA);
+
+        ui_manager.SetLegendCount(averageSpectralM.Count, averageSpectralK.Count, averageSpectralG.Count, averageSpectralF.Count, averageSpectralA.Count);
     }
 
     public void SendToParticleSystem(char spectralClass)
@@ -403,26 +360,3 @@ public class CelestialBody
     public int temperature;
 }
 
-public class CelestialBodyComparerX : IComparer
-{
-    public int Compare(object x, object y)
-    {
-        return ((CelestialBody)x).position.x.CompareTo(((CelestialBody)y).position.x);
-    }
-}
-
-public class CelestialBodyComparerY : IComparer
-{
-    public int Compare(object x, object y)
-    {
-        return ((CelestialBody)x).position.y.CompareTo(((CelestialBody)y).position.y);
-    }
-}
-
-public class CelestialBodyComparerZ : IComparer
-{
-    public int Compare(object x, object y)
-    {
-        return ((CelestialBody)x).position.z.CompareTo(((CelestialBody)y).position.z);
-    }
-}

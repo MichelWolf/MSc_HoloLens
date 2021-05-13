@@ -11,6 +11,8 @@ public class PlacementManager : MonoBehaviour, IPunObservable
     public GameObject visualCube;
     internal Vector3 visualScale;
 
+    public GameObject centerCircle;
+
     public GameObject anchor;
 
     internal SpawnSpheres spawner;
@@ -54,7 +56,10 @@ public class PlacementManager : MonoBehaviour, IPunObservable
 
         if (dynamicLOD && FindObjectOfType<Reader>().tree != null)
         {
-            float dist = Vector3.Distance(visualCube.transform.position, mainCam.transform.position);
+            centerCircle.transform.localPosition = (mainCam.transform.position - visualCube.transform.position).normalized * 0.1f;
+            //float dist = Vector3.Distance(visualCube.transform.position, mainCam.transform.position);
+            float dist = Vector3.Distance(centerCircle.transform.position, mainCam.transform.position);
+            //dist = Mathf.Max(dist, 0.5f);
             float t = dist / 2f;
 
             int lodValue = Mathf.FloorToInt(ui_manager.LODSlider.maxValue - (ui_manager.LODSlider.maxValue * t));

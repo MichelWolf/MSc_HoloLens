@@ -61,6 +61,12 @@ public class UIManager : MonoBehaviour
     public Image spectralImageF;
     public Image spectralImageA;
 
+    public TextMeshProUGUI countM;
+    public TextMeshProUGUI countK;
+    public TextMeshProUGUI countG;
+    public TextMeshProUGUI countF;
+    public TextMeshProUGUI countA;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -208,5 +214,14 @@ public class UIManager : MonoBehaviour
         spectralImageG.color = spawner.spectralColorG;
         spectralImageF.color = spawner.spectralColorF;
         spectralImageA.color = spawner.spectralColorA;
+    }
+
+    public void SetLegendCount(int M, int K, int G, int F, int A)
+    {
+        countM.text = M.ToString();
+        countK.text = K.ToString();
+        countG.text = G.ToString();
+        countF.text = F.ToString();
+        countA.text = A.ToString();
     }
 }

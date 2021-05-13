@@ -243,6 +243,45 @@ public class SpawnSpheres : MonoBehaviour, IPunObservable
     {
         var particles = new ParticleSystem.Particle[indices.Count];
 
+        switch (spectralClass)
+        {
+            case 'M':
+                if(particleSystemM == null)
+                {
+                    return;
+                }
+                break;
+            case 'K':
+                if (particleSystemK == null)
+                {
+                    return;
+                }
+                break;
+            case 'G':
+                if (particleSystemG == null)
+                {
+                    return;
+                }
+                break;
+            case 'F':
+                if (particleSystemF == null)
+                {
+                    return;
+                }
+                break;
+            case 'A':
+                if (particleSystemA == null)
+                {
+                    return;
+                }
+                break;
+            default:
+                break;
+        }
+        if (reader == null)
+        {
+            reader = FindObjectOfType<Reader>();
+        }
         for (int i = 0; i < particles.Length; ++i)
         {
             particles[i].position = reader.celestialBodyCloud[indices[i]].position;
