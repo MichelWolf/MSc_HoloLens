@@ -36,11 +36,16 @@ public class Reader : MonoBehaviour
     public List<int> spectralFIndex;
     public List<int> spectralAIndex;
 
-    public List<Vector3> averageSpectralM;
-    public List<Vector3> averageSpectralK;
-    public List<Vector3> averageSpectralG;
-    public List<Vector3> averageSpectralF;
-    public List<Vector3> averageSpectralA;
+    public List<KDNode> averageSpectralM;
+    public List<KDNode> averageSpectralK;
+    public List<KDNode> averageSpectralG;
+    public List<KDNode> averageSpectralF;
+    public List<KDNode> averageSpectralA;
+    public List<float> averageSpectralDistanceM;
+    public List<float> averageSpectralDistanceK;
+    public List<float> averageSpectralDistanceG;
+    public List<float> averageSpectralDistanceF;
+    public List<float> averageSpectralDistanceA;
 
     internal KDTree tree;
 
@@ -157,7 +162,7 @@ public class Reader : MonoBehaviour
         tree = new KDTree(pointCloud, maxPointsPerLeafNode, this);
         tree.SetRootNodeVecAndTemp();
         Debug.Log(tree.kdNodesCount);
-        ui_manager.SetLODSlider(tree.depth);
+        ui_manager.SetLODSliderMax(tree.depth);
         
         Debug.Log("Root X: " + tree.RootNode.averagePositionOfNodes.x);
         Debug.Log("Root Y: " + tree.RootNode.averagePositionOfNodes.y);
@@ -248,38 +253,50 @@ public class Reader : MonoBehaviour
         }
         Debug.Log(nodeList.Count);
 
-        averageSpectralM = new List<Vector3>();
-        averageSpectralK = new List<Vector3>();
-        averageSpectralG = new List<Vector3>();
-        averageSpectralF = new List<Vector3>();
-        averageSpectralA = new List<Vector3>();
+        averageSpectralM = new List<KDNode>();
+        averageSpectralK = new List<KDNode>();
+        averageSpectralG = new List<KDNode>();
+        averageSpectralF = new List<KDNode>();
+        averageSpectralA = new List<KDNode>();
+
+        averageSpectralDistanceM = new List<float>();
+        averageSpectralDistanceK = new List<float>();
+        averageSpectralDistanceG = new List<float>();
+        averageSpectralDistanceF = new List<float>();
+        averageSpectralDistanceA = new List<float>();
+
 
         foreach (KDNode node in nodeList)
         {
             //Debug.Log(nodeList[0].Count);
             if (node.averageTempOfNodes <= 3700)
             {
-                averageSpectralM.Add(node.averagePositionOfNodes);
+                averageSpectralM.Add(node);
+                averageSpectralDistanceM.Add(node.distanceFromAverage);
             }
             else if (node.averageTempOfNodes > 3700 && node.averageTempOfNodes <= 5200)
             {
-                averageSpectralK.Add(node.averagePositionOfNodes);
+                averageSpectralK.Add(node);
+                averageSpectralDistanceK.Add(node.distanceFromAverage);
             }
             else if (node.averageTempOfNodes > 5200 && node.averageTempOfNodes <= 6000)
             {
-                averageSpectralG.Add(node.averagePositionOfNodes);
+                averageSpectralG.Add(node);
+                averageSpectralDistanceG.Add(node.distanceFromAverage);
             }
             else if (node.averageTempOfNodes > 6000 && node.averageTempOfNodes <= 7500)
             {
-                averageSpectralF.Add(node.averagePositionOfNodes);
+                averageSpectralF.Add(node);
+                averageSpectralDistanceF.Add(node.distanceFromAverage);
             }
             else if (node.averageTempOfNodes > 7500 && node.averageTempOfNodes <= 10000)
             {
-                averageSpectralA.Add(node.averagePositionOfNodes);
+                averageSpectralA.Add(node);
+                averageSpectralDistanceA.Add(node.distanceFromAverage);
             }
             //pointsToSpawn.Add(node.averagePositionOfNodes);
-            
-        //List<Vector3> pointsInNode = new List<Vector3>();
+
+            //List<Vector3> pointsInNode = new List<Vector3>();
             //for (int i = node.start; i < node.end; i++)
             //{
             //    pointsInNode.Add(pointCloud[tree.Permutation[i]]);

@@ -1,4 +1,5 @@
 using Photon.Pun;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -22,6 +23,9 @@ public class PlacementManager : MonoBehaviour, IPunObservable
     public int latestLODValue = 0;
 
     public bool dynamicLOD = true;
+
+    public GameObject dynamicLODOnButton;
+    public GameObject dynamicLODOffButton;
 
     PhotonView photonView;
     // Start is called before the first frame update
@@ -67,9 +71,31 @@ public class PlacementManager : MonoBehaviour, IPunObservable
             {
                 latestLODValue = lodValue;
                 ui_manager.LODSlider.value = lodValue;
+
+                RemapAndApplyToStepSlider(lodValue, 0, 0, ui_manager.stepSlider.SliderStepDivisions, 1);
+                //float newStepSliderValue = Remap(lodValue, 0, 0, ui_manager.stepSlider.SliderStepDivisions, 1);
+                
                 FindObjectOfType<Reader>().SplitTreeToLOD(lodValue);
             }
         }
+    }
+
+    private void RemapAndApplyToStepSlider(int lodValue, int fromMin, int toMin, int fromMax, int toMax)
+    {
+        float fromAbs = lodValue - fromMin;
+        float fromMaxAbs = fromMax - fromMin;
+
+        float normal = fromAbs / fromMaxAbs;
+
+        float toMaxAbs = toMax - toMin;
+        float toAbs = toMaxAbs * normal;
+
+        float to = toAbs + toMin;
+
+        
+        
+        ui_manager.stepSlider.SliderValue = to;
+        
     }
 
     public void EnableAdjustment()
@@ -117,7 +143,13 @@ public class PlacementManager : MonoBehaviour, IPunObservable
     public void ToggleDynamicLOD()
     {
         dynamicLOD = !dynamicLOD;
+        dynamicLODOffButton.SetActive(dynamicLOD);
+        dynamicLODOnButton.SetActive(!dynamicLOD);
+        ui_manager.stepSlider.enabled = !dynamicLOD;
     }
+
+    
+    
 
     public void TakeOwnershipOfView()
     {

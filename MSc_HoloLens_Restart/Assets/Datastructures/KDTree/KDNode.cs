@@ -49,6 +49,7 @@ namespace DataStructures.ViliWonka.KDTree {
 
         public Vector3 averagePositionOfNodes;
         public int averageTempOfNodes;
+        public float distanceFromAverage;
         
     };
 

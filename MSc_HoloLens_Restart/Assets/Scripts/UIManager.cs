@@ -61,11 +61,20 @@ public class UIManager : MonoBehaviour
     public Image spectralImageF;
     public Image spectralImageA;
 
+    public TextMeshPro spectralMText;
+    public TextMeshPro spectralKText;
+    public TextMeshPro spectralGText;
+    public TextMeshPro spectralFText;
+    public TextMeshPro spectralAText;
+
     public TextMeshProUGUI countM;
     public TextMeshProUGUI countK;
     public TextMeshProUGUI countG;
     public TextMeshProUGUI countF;
     public TextMeshProUGUI countA;
+
+    public StepSlider stepSlider;
+    public int latestLODValue;
 
     // Start is called before the first frame update
     void Start()
@@ -184,19 +193,39 @@ public class UIManager : MonoBehaviour
         disableAdjustButton.SetActive(adjust);
     }
 
-    public void SetLODSlider(int max)
+    public void SetLODSliderMax(int max)
     {
         LODSlider.maxValue = max;
+
+        stepSlider.SliderStepDivisions = max;
+        
     }
 
     public void OnLODSliderChange()
     {
-        reader.SplitTreeToLOD((int)LODSlider.value);
+        int lodValue = Mathf.RoundToInt(stepSlider.SliderValue * stepSlider.SliderStepDivisions);
+
+
+        //int lodValue = Mathf.FloorToInt(ui_manager.LODSlider.maxValue - (ui_manager.LODSlider.maxValue * t));
+        if (lodValue != latestLODValue)
+        {
+            latestLODValue = lodValue;
+            //ui_manager.LODSlider.value = lodValue;
+            Debug.Log(lodValue);
+            FindObjectOfType<Reader>().SplitTreeToLOD(lodValue);
+        }
+
+
+        //reader.SplitTreeToLOD((int)LODSlider.value);
     }
+
+
 
     public void IncreaseLOD()
     {
         LODSlider.value += 1;
+
+        stepSlider.SliderValue = 1;
         reader.SplitTreeToLOD((int)LODSlider.value);
     }
 
@@ -209,6 +238,13 @@ public class UIManager : MonoBehaviour
     public void SetLegendColor()
     {
         SpawnSpheres spawner = FindObjectOfType<SpawnSpheres>();
+
+        spectralMText.color = spawner.spectralColorM;
+        spectralKText.color = spawner.spectralColorK;
+        spectralGText.color = spawner.spectralColorG;
+        spectralFText.color = spawner.spectralColorF;
+        spectralAText.color = spawner.spectralColorA;
+
         spectralImageM.color = spawner.spectralColorM;
         spectralImageK.color = spawner.spectralColorK;
         spectralImageG.color = spawner.spectralColorG;

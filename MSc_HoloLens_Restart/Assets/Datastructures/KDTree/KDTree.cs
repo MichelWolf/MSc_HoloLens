@@ -582,10 +582,10 @@ namespace DataStructures.ViliWonka.KDTree
 
         public void SetRootNodeVecAndTemp()
         {
-            Tuple<Vector3, int> result = CalculateVecAndTemp(RootNode);
+            Tuple<Vector3, int, float> result = CalculateVecAndTemp(RootNode);
         }
         
-        public Tuple<Vector3,int> CalculateVecAndTemp(KDNode node)
+        public Tuple<Vector3,int, float> CalculateVecAndTemp(KDNode node)
         {
             if(node.Leaf)
             {
@@ -603,13 +603,25 @@ namespace DataStructures.ViliWonka.KDTree
                             average.Average(x => x.y),
                             average.Average(x => x.z));
                     node.averageTempOfNodes = (int)averageTempList.Average();
+                    
                 }
-                return new Tuple<Vector3, int>(node.averagePositionOfNodes, node.averageTempOfNodes);
+                float maxDistance = 0;
+                for (int i = node.start; i < node.end; i++)
+                {
+                    float dist = Vector3.Distance(node.averagePositionOfNodes, points[permutation[i]]);
+                    if (dist > maxDistance)
+                    {
+                        maxDistance = dist;
+                    }
+
+                    node.distanceFromAverage = maxDistance;
+                }
+                return new Tuple<Vector3, int, float>(node.averagePositionOfNodes, node.averageTempOfNodes, node.distanceFromAverage);
             }
             else
             {
-                Tuple<Vector3, int> resultNegChild = null;
-                Tuple<Vector3, int> resultPosChild = null;
+                Tuple<Vector3, int, float> resultNegChild = null;
+                Tuple<Vector3, int, float> resultPosChild = null;
                 if (node.negativeChild != null)
                 { 
                     resultNegChild = CalculateVecAndTemp(node.negativeChild);
@@ -624,20 +636,23 @@ namespace DataStructures.ViliWonka.KDTree
                 {
                     node.averagePositionOfNodes = (resultNegChild.Item1 + resultPosChild.Item1) / 2f;
                     node.averageTempOfNodes = Mathf.FloorToInt((resultNegChild.Item2 + resultPosChild.Item2) / 2f);
+                    node.distanceFromAverage = Vector3.Distance(node.averagePositionOfNodes, resultNegChild.Item1);
                 }
                 //Calculation if node only has a negative child
                 else if(resultNegChild != null && resultPosChild == null)
                 {
                     node.averagePositionOfNodes = resultNegChild.Item1;
                     node.averageTempOfNodes = resultNegChild.Item2;
+                    node.distanceFromAverage = resultNegChild.Item3;
                 }
                 //Calculation if node only has a positive child
                 else if (resultNegChild == null && resultPosChild != null)
                 {
                     node.averagePositionOfNodes = resultPosChild.Item1;
                     node.averageTempOfNodes = resultPosChild.Item2;
+                    node.distanceFromAverage = resultPosChild.Item3;
                 }
-                return new Tuple<Vector3, int>(node.averagePositionOfNodes, node.averageTempOfNodes);
+                return new Tuple<Vector3, int, float>(node.averagePositionOfNodes, node.averageTempOfNodes, node.distanceFromAverage);
             }
         }
     }    

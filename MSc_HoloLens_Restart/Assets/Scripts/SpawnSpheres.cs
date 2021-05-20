@@ -5,9 +5,8 @@ using TMPro;
 using Microsoft.MixedReality.Toolkit;
 using Microsoft.MixedReality.Toolkit.SpatialAwareness;
 using DataStructures.ViliWonka.KDTree;
-using Photon.Pun;
 
-public class SpawnSpheres : MonoBehaviour, IPunObservable
+public class SpawnSpheres : MonoBehaviour
 {
     public double maxObjects = 1700000000;
     public double currentSpawnedObjects = 0;
@@ -39,14 +38,13 @@ public class SpawnSpheres : MonoBehaviour, IPunObservable
     public Color spectralColorA;
 
     public float particleSize = 1;
-    PhotonView photonView;
 
     Reader reader;
     
     // Start is called before the first frame update
     void Start()
     {
-        photonView = GetComponent<PhotonView>();
+        
 
         reader = FindObjectOfType<Reader>();
     }
@@ -286,6 +284,7 @@ public class SpawnSpheres : MonoBehaviour, IPunObservable
         {
             particles[i].position = reader.celestialBodyCloud[indices[i]].position;
             particles[i].startSize = particleSize;
+            particles[i].startSize = 1.0f;
             //particles[i].startColor = spectralColorM;
         }
         switch (spectralClass)
@@ -320,14 +319,15 @@ public class SpawnSpheres : MonoBehaviour, IPunObservable
         }
     }
 
-    public void ApplyToParticleSystem(char spectralClass, List<Vector3> points)
+    public void ApplyToParticleSystem(char spectralClass, List<KDNode> points)
     {
         var particles = new ParticleSystem.Particle[points.Count];
 
         for (int i = 0; i < particles.Length; ++i)
         {
-            particles[i].position = points[i];
+            particles[i].position = points[i].averagePositionOfNodes;
             particles[i].startSize = particleSize;
+            particles[i].startSize = points[i].distanceFromAverage;
             //particles[i].startColor = spectralColorM;
         }
         switch (spectralClass)
@@ -422,31 +422,4 @@ public class SpawnSpheres : MonoBehaviour, IPunObservable
         //FindObjectOfType<NetworkManager>().SendQueryResult(index);
     }
 
-    public void TakeOwnershipOfView()
-    {
-        if (!photonView.IsMine)
-        {
-            photonView.RequestOwnership();
-        }
-    }
-
-    public void GiveOwnershipToMasterOfView()
-    {
-        photonView.TransferOwnership(PhotonNetwork.MasterClient);
-    }
-
-    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
-    {
-        //if (stream.IsWriting == true)
-        //{
-            
-        //    stream.SendNext((Vector3)this.transform.position);
-        //    stream.SendNext((Quaternion)this.transform.rotation);
-        //}
-        //else
-        //{
-        //    this.transform.position = (Vector3)stream.ReceiveNext();
-        //    this.transform.rotation = (Quaternion)stream.ReceiveNext();
-        //}
-    }
 }
