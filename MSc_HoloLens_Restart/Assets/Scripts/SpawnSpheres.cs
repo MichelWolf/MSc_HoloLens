@@ -5,6 +5,7 @@ using TMPro;
 using Microsoft.MixedReality.Toolkit;
 using Microsoft.MixedReality.Toolkit.SpatialAwareness;
 using DataStructures.ViliWonka.KDTree;
+using System;
 
 public class SpawnSpheres : MonoBehaviour
 {
@@ -68,156 +69,7 @@ public class SpawnSpheres : MonoBehaviour
         }
     }
 
-    public void StartSpawnSpheres()
-    {
-        DeleteSpawns();
-        spawning = true;
-        StartCoroutine(startSpawningSpheres());
-    }
 
-    public IEnumerator startSpawningSpheres()
-    {
-        while (currentSpawnedObjects < maxObjects && spawning)
-        {
-            if (!paused)
-            {
-                for (int i = 0; i < spawnRate; i++)
-                {
-                    Instantiate(spherePrefab, this.transform.position + new Vector3(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f)), Quaternion.identity, this.transform);
-                    currentSpawnedObjects++;
-                }
-                count.GetComponent<TextMeshPro>().text = "Count: " + currentSpawnedObjects.ToString();
-                yield return new WaitForSeconds(spawnTime);
-            }
-            else
-            {
-                yield return new WaitForSeconds(spawnTime);
-            }
-        }
-    }
-
-    public void StartSpawnQuads()
-    {
-        DeleteSpawns();
-        spawning = true;
-        StartCoroutine(startSpawningQuads());
-    }
-
-    public IEnumerator startSpawningQuads()
-    {
-        while (currentSpawnedObjects < maxObjects && spawning)
-        {
-            if (!paused)
-            {
-                for (int i = 0; i < spawnRate; i++)
-                {
-                    Instantiate(quadPrefab, this.transform.position + new Vector3(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f)), Quaternion.identity, this.transform);
-                    currentSpawnedObjects++;
-                }
-                count.GetComponent<TextMeshPro>().text = "Count: " + currentSpawnedObjects.ToString();
-                yield return new WaitForSeconds(spawnTime);
-            }
-            else
-            {
-                yield return new WaitForSeconds(spawnTime);
-            }
-        }
-    }
-
-    public void StartSpawnTetra()
-    {
-        DeleteSpawns();
-        spawning = true;
-        StartCoroutine(startSpawningTetra());
-    }
-
-    public IEnumerator startSpawningTetra()
-    {
-        while (currentSpawnedObjects < maxObjects && spawning)
-        {
-            if (!paused)
-            {
-                for (int i = 0; i < spawnRate; i++)
-                {
-                    Instantiate(tetraPrefab, this.transform.position + new Vector3(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f)), Quaternion.identity, this.transform);
-                    currentSpawnedObjects++;
-                }
-                count.GetComponent<TextMeshPro>().text = "Count: " + currentSpawnedObjects.ToString();
-                yield return new WaitForSeconds(spawnTime);
-            }
-            else
-            {
-                yield return new WaitForSeconds(spawnTime);
-            }
-        }
-    }
-
-    public void DeleteSpawns()
-    {
-        spawning = false;
-        currentSpawnedObjects = 0;
-        foreach(GameObject go in GameObject.FindGameObjectsWithTag("SpawnedObject"))
-        {
-            Destroy(go);
-        }
-    }
-
-    public void Spawn(float x, float y, float z)
-    {
-        Instantiate(tetraPrefab, this.transform.position + new Vector3(x, y, z), Quaternion.identity, this.transform);
-    }
-
-    
-
-    public void ApplyToParticleSystem(Vector3[] positions)
-    {
-        //var ps = GetComponent<ParticleSystem>();
-        //if (ps == null)
-        //    return;
-        List<ParticleSystem.Particle> spectralM = new List<ParticleSystem.Particle>();
-        List<ParticleSystem.Particle> spectralK = new List<ParticleSystem.Particle>();
-        List<ParticleSystem.Particle> spectralG = new List<ParticleSystem.Particle>();
-        List<ParticleSystem.Particle> spectralF = new List<ParticleSystem.Particle>();
-        List<ParticleSystem.Particle> spectralA = new List<ParticleSystem.Particle>();
-
-        var particles = new ParticleSystem.Particle[positions.Length];
-        Debug.Log(positions.Length);
-        for (int i = 0; i < particles.Length; ++i)
-        {
-            particles[i].position = positions[i];
-            particles[i].startSize = particleSize;
-            //particles[i].startColor = spectralColorM;
-            //if(positions[i].temperature <= 3700)
-            //{
-            //    spectralM.Add(new ParticleSystem.Particle(positions[i].position));
-            //}
-            //else if (positions[i].temperature > 3700 && positions[i].temperature <= 5200)
-            //{
-            //    spectralK.Add(positions[i].position);
-            //}
-            //else if (positions[i].temperature > 5200 && positions[i].temperature <= 6000)
-            //{
-            //    spectralG.Add(positions[i].position);
-            //}
-            //else if (positions[i].temperature > 6000 && positions[i].temperature <= 7500)
-            //{
-            //    spectralF.Add(positions[i].position);
-            //}
-            //else if (positions[i].temperature > 7500 && positions[i].temperature <= 10000)
-            //{
-            //    spectralA.Add(positions[i].position);
-            //}
-        }
-
-        particleSystemM.transform.gameObject.GetComponent<ParticleSystemRenderer>().material.color = spectralColorM;
-        particleSystemK.transform.gameObject.GetComponent<ParticleSystemRenderer>().material.color = spectralColorK;
-        particleSystemG.transform.gameObject.GetComponent<ParticleSystemRenderer>().material.color = spectralColorG;
-        particleSystemF.transform.gameObject.GetComponent<ParticleSystemRenderer>().material.color = spectralColorF;
-        particleSystemA.transform.gameObject.GetComponent<ParticleSystemRenderer>().material.color = spectralColorA;
-
-        
-        particleSystemM.Pause();
-    }
 
     public void ApplyToParticleSystem(List<Vector3> positions)
     {
@@ -237,97 +89,17 @@ public class SpawnSpheres : MonoBehaviour
         particleSystemA.Pause();
     }
 
-    public void ApplyToParticleSystem(char spectralClass, List<int> indices)
-    {
-        var particles = new ParticleSystem.Particle[indices.Count];
 
-        switch (spectralClass)
-        {
-            case 'M':
-                if(particleSystemM == null)
-                {
-                    return;
-                }
-                break;
-            case 'K':
-                if (particleSystemK == null)
-                {
-                    return;
-                }
-                break;
-            case 'G':
-                if (particleSystemG == null)
-                {
-                    return;
-                }
-                break;
-            case 'F':
-                if (particleSystemF == null)
-                {
-                    return;
-                }
-                break;
-            case 'A':
-                if (particleSystemA == null)
-                {
-                    return;
-                }
-                break;
-            default:
-                break;
-        }
-        if (reader == null)
-        {
-            reader = FindObjectOfType<Reader>();
-        }
-        for (int i = 0; i < particles.Length; ++i)
-        {
-            particles[i].position = reader.celestialBodyCloud[indices[i]].position;
-            particles[i].startSize = particleSize;
-            particles[i].startSize = 1.0f;
-            //particles[i].startColor = spectralColorM;
-        }
-        switch (spectralClass)
-        {
-            case 'M':
-                particleSystemM.SetParticles(particles);
-                particleSystemM.transform.gameObject.GetComponent<ParticleSystemRenderer>().material.color = spectralColorM;
-                particleSystemM.Pause();
-                break;
-            case 'K':
-                particleSystemK.SetParticles(particles);
-                particleSystemK.transform.gameObject.GetComponent<ParticleSystemRenderer>().material.color = spectralColorK;
-                particleSystemK.Pause();
-                break;
-            case 'G':
-                particleSystemG.SetParticles(particles);
-                particleSystemG.transform.gameObject.GetComponent<ParticleSystemRenderer>().material.color = spectralColorG;
-                particleSystemG.Pause();
-                break;
-            case 'F':
-                particleSystemF.SetParticles(particles);
-                particleSystemF.transform.gameObject.GetComponent<ParticleSystemRenderer>().material.color = spectralColorF;
-                particleSystemF.Pause();
-                break;
-            case 'A':
-                particleSystemA.SetParticles(particles);
-                particleSystemA.transform.gameObject.GetComponent<ParticleSystemRenderer>().material.color = spectralColorA;
-                particleSystemA.Pause();
-                break;
-            default:
-                break;
-        }
-    }
-
-    public void ApplyToParticleSystem(char spectralClass, List<KDNode> points)
+    public void ApplyToParticleSystem(char spectralClass, List<Tuple<Vector3, float>> points)
     {
+        
         var particles = new ParticleSystem.Particle[points.Count];
 
         for (int i = 0; i < particles.Length; ++i)
         {
-            particles[i].position = points[i].averagePositionOfNodes;
+            particles[i].position = points[i].Item1;
             particles[i].startSize = particleSize;
-            particles[i].startSize = points[i].distanceFromAverage;
+            particles[i].startSize = points[i].Item2;
             //particles[i].startColor = spectralColorM;
         }
         switch (spectralClass)

@@ -66,7 +66,7 @@ public class PlacementManager : MonoBehaviour, IPunObservable
             //dist = Mathf.Max(dist, 0.5f);
             float t = dist / 2f;
 
-            int lodValue = Mathf.FloorToInt(ui_manager.LODSlider.maxValue - (ui_manager.LODSlider.maxValue * t));
+            int lodValue = Mathf.Max(Mathf.FloorToInt(ui_manager.LODSlider.maxValue - (ui_manager.LODSlider.maxValue * t)), 0);
             if(lodValue != latestLODValue)
             {
                 latestLODValue = lodValue;

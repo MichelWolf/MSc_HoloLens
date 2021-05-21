@@ -608,14 +608,15 @@ namespace DataStructures.ViliWonka.KDTree
                 float maxDistance = 0;
                 for (int i = node.start; i < node.end; i++)
                 {
-                    float dist = Vector3.Distance(node.averagePositionOfNodes, points[permutation[i]]);
-                    if (dist > maxDistance)
+                    //float dist = Vector3.Distance(node.averagePositionOfNodes, points[permutation[i]]);
+                    float mag = Vector3.Magnitude(node.averagePositionOfNodes - points[permutation[i]]);
+                    if (mag > maxDistance)
                     {
-                        maxDistance = dist;
+                        maxDistance = mag;
                     }
 
-                    node.distanceFromAverage = maxDistance;
                 }
+                node.distanceFromAverage = maxDistance;
                 return new Tuple<Vector3, int, float>(node.averagePositionOfNodes, node.averageTempOfNodes, node.distanceFromAverage);
             }
             else
@@ -636,7 +637,32 @@ namespace DataStructures.ViliWonka.KDTree
                 {
                     node.averagePositionOfNodes = (resultNegChild.Item1 + resultPosChild.Item1) / 2f;
                     node.averageTempOfNodes = Mathf.FloorToInt((resultNegChild.Item2 + resultPosChild.Item2) / 2f);
-                    node.distanceFromAverage = Vector3.Distance(node.averagePositionOfNodes, resultNegChild.Item1);
+                    
+                    //float negMagnitute = resultNegChild.Item1.magnitude;
+                    Vector3 nodeAvToNegChildAv = resultNegChild.Item1 - node.averagePositionOfNodes;
+                    float negMagnitute = ((nodeAvToNegChildAv.normalized) * (nodeAvToNegChildAv.magnitude + resultNegChild.Item3)).magnitude;
+
+                    Vector3 nodeAvToPosChildAv = resultPosChild.Item1 - node.averagePositionOfNodes;
+                    float posMagnitute = ((nodeAvToPosChildAv.normalized) * (nodeAvToPosChildAv.magnitude + resultPosChild.Item3)).magnitude;
+                    //float posMagnitute = resultPosChild.Item1.magnitude;
+                    if (negMagnitute > posMagnitute)
+                    {
+                        //node.distanceFromAverage = Vector3.Distance(node.averagePositionOfNodes, resultNegChild.Item1.normalized * (negMagnitute + resultNegChild.Item3));
+                        
+                        //node.distanceFromAverage = Vector3.Magnitude(node.averagePositionOfNodes - (resultNegChild.Item1.normalized * (negMagnitute + resultNegChild.Item3)));
+                        //node.distanceFromAverage = (node.averagePositionOfNodes - (resultNegChild.Item1.normalized * (negMagnitute + resultNegChild.Item3))).magnitude;
+                        
+                        node.distanceFromAverage = negMagnitute;
+                    }
+                    else
+                    {
+                        //node.distanceFromAverage = Vector3.Distance(node.averagePositionOfNodes, resultPosChild.Item1.normalized * (posMagnitute + resultPosChild.Item3));
+                        //node.distanceFromAverage = Vector3.Magnitude(node.averagePositionOfNodes - (resultPosChild.Item1.normalized * (posMagnitute + resultPosChild.Item3)));
+                        //node.distanceFromAverage = (node.averagePositionOfNodes - (resultPosChild.Item1.normalized * (posMagnitute + resultPosChild.Item3))).magnitude;
+                        //Vector3 nodeAvToPosChildAv = resultPosChild.Item1 - node.averagePositionOfNodes;
+                        node.distanceFromAverage = posMagnitute;
+                    }
+                    //node.distanceFromAverage = Vector3.Distance(node.averagePositionOfNodes, Mathf.Max(Vector3.Magnitude(resultNegChild.Item1.normalized * resultNegChild.Item3), Vector3.Magnitude(resultPosChild.Item1.normalized * resultPosChild.Item3));// + Mathf.Max(resultNegChild.Item3, resultPosChild.Item3);
                 }
                 //Calculation if node only has a negative child
                 else if(resultNegChild != null && resultPosChild == null)

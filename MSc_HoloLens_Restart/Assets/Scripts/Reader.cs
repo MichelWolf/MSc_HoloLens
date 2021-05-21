@@ -36,11 +36,15 @@ public class Reader : MonoBehaviour
     public List<int> spectralFIndex;
     public List<int> spectralAIndex;
 
-    public List<KDNode> averageSpectralM;
-    public List<KDNode> averageSpectralK;
-    public List<KDNode> averageSpectralG;
-    public List<KDNode> averageSpectralF;
-    public List<KDNode> averageSpectralA;
+    public List<Tuple<Vector3, float>> averageSpectralM;
+    public List<Tuple<Vector3, float>> averageSpectralK;
+    public List<Tuple<Vector3, float>> averageSpectralG;
+    public List<Tuple<Vector3, float>> averageSpectralF;
+    public List<Tuple<Vector3, float>> averageSpectralA;
+    //public List<KDNode> averageSpectralK;
+    //public List<KDNode> averageSpectralG;
+    //public List<KDNode> averageSpectralF;
+    //public List<KDNode> averageSpectralA;
     public List<float> averageSpectralDistanceM;
     public List<float> averageSpectralDistanceK;
     public List<float> averageSpectralDistanceG;
@@ -251,49 +255,70 @@ public class Reader : MonoBehaviour
                 }
             }
         }
-        Debug.Log(nodeList.Count);
+        //Debug.Log(nodeList.Count);
 
-        averageSpectralM = new List<KDNode>();
-        averageSpectralK = new List<KDNode>();
-        averageSpectralG = new List<KDNode>();
-        averageSpectralF = new List<KDNode>();
-        averageSpectralA = new List<KDNode>();
-
-        averageSpectralDistanceM = new List<float>();
-        averageSpectralDistanceK = new List<float>();
-        averageSpectralDistanceG = new List<float>();
-        averageSpectralDistanceF = new List<float>();
-        averageSpectralDistanceA = new List<float>();
+        averageSpectralM = new List<Tuple<Vector3, float>>();
+        averageSpectralK = new List<Tuple<Vector3, float>>();
+        averageSpectralG = new List<Tuple<Vector3, float>>();
+        averageSpectralF = new List<Tuple<Vector3, float>>();
+        averageSpectralA = new List<Tuple<Vector3, float>>();
 
 
         foreach (KDNode node in nodeList)
         {
+            if(node.Leaf)
+            {
+                for (int i = node.start; i < node.end; i++)
+                {
+                    if (celestialBodyCloud[tree.Permutation[i]].temperature <= 3700)
+                    {
+                        averageSpectralM.Add(new Tuple<Vector3, float>(celestialBodyCloud[tree.Permutation[i]].position, spawner.particleSize));
+                    }
+                    else if (celestialBodyCloud[tree.Permutation[i]].temperature > 3700 && celestialBodyCloud[tree.Permutation[i]].temperature <= 5200)
+                    {
+                        averageSpectralK.Add(new Tuple<Vector3, float>(celestialBodyCloud[tree.Permutation[i]].position, spawner.particleSize));
+                    }
+                    else if (celestialBodyCloud[tree.Permutation[i]].temperature > 5200 && celestialBodyCloud[tree.Permutation[i]].temperature <= 6000)
+                    {
+                        averageSpectralG.Add(new Tuple<Vector3, float>(celestialBodyCloud[tree.Permutation[i]].position, spawner.particleSize));
+                    }
+                    else if (celestialBodyCloud[tree.Permutation[i]].temperature > 6000 && celestialBodyCloud[tree.Permutation[i]].temperature <= 7500)
+                    {
+                        averageSpectralF.Add(new Tuple<Vector3, float>(celestialBodyCloud[tree.Permutation[i]].position, spawner.particleSize));
+                    }
+                    else if (celestialBodyCloud[tree.Permutation[i]].temperature > 7500 && celestialBodyCloud[tree.Permutation[i]].temperature <= 10000)
+                    {
+                        averageSpectralA.Add(new Tuple<Vector3, float>(celestialBodyCloud[tree.Permutation[i]].position, spawner.particleSize));
+                    }
+                }
+            }
+            else
+            {
+                float countRatio = (float)node.Count / (float)tree.Count;
+                float size = Mathf.Lerp(spawner.particleSize, 2, countRatio);
+                if (node.averageTempOfNodes <= 3700)
+                {
+                    averageSpectralM.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, size));
+                }
+                else if (node.averageTempOfNodes > 3700 && node.averageTempOfNodes <= 5200)
+                {
+                    averageSpectralK.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, size));
+                }
+                else if (node.averageTempOfNodes > 5200 && node.averageTempOfNodes <= 6000)
+                {
+                    averageSpectralG.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, size));
+                }
+                else if (node.averageTempOfNodes > 6000 && node.averageTempOfNodes <= 7500)
+                {
+                    averageSpectralF.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, size));
+                }
+                else if (node.averageTempOfNodes > 7500 && node.averageTempOfNodes <= 10000)
+                {
+                    averageSpectralA.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, size));
+                }
+            }
             //Debug.Log(nodeList[0].Count);
-            if (node.averageTempOfNodes <= 3700)
-            {
-                averageSpectralM.Add(node);
-                averageSpectralDistanceM.Add(node.distanceFromAverage);
-            }
-            else if (node.averageTempOfNodes > 3700 && node.averageTempOfNodes <= 5200)
-            {
-                averageSpectralK.Add(node);
-                averageSpectralDistanceK.Add(node.distanceFromAverage);
-            }
-            else if (node.averageTempOfNodes > 5200 && node.averageTempOfNodes <= 6000)
-            {
-                averageSpectralG.Add(node);
-                averageSpectralDistanceG.Add(node.distanceFromAverage);
-            }
-            else if (node.averageTempOfNodes > 6000 && node.averageTempOfNodes <= 7500)
-            {
-                averageSpectralF.Add(node);
-                averageSpectralDistanceF.Add(node.distanceFromAverage);
-            }
-            else if (node.averageTempOfNodes > 7500 && node.averageTempOfNodes <= 10000)
-            {
-                averageSpectralA.Add(node);
-                averageSpectralDistanceA.Add(node.distanceFromAverage);
-            }
+            
             //pointsToSpawn.Add(node.averagePositionOfNodes);
 
             //List<Vector3> pointsInNode = new List<Vector3>();
