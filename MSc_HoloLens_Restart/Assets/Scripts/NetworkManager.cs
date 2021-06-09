@@ -170,25 +170,6 @@ public class NetworkManager : MonoBehaviourPunCallbacks, IPunObservable
         photonView.RPC("RPC_QueryTree", RpcTarget.MasterClient, pos);
     }
 
-    [PunRPC]
-    public void RPC_QueryTree(Vector3 position)
-    {
-        FindObjectOfType<SpawnSpheres>().QueryTree(position);
-    }
-
-
-    //public void SendQueryResult(int index)
-    //{
-    //    photonView.RPC("RPC_SendQueryResult", RpcTarget.All, index);
-
-    //}
-
-    //[PunRPC]
-    //public void RPC_SendQueryResult(int index)
-    //{
-    //    FindObjectOfType<SpawnSpheres>().debugCube.transform.localPosition = reader.pointCloud[index];
-    //}
-
     void IPunObservable.OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
         //if (stream.IsWriting == true)

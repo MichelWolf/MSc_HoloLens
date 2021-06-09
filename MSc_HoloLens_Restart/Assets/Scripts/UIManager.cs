@@ -226,7 +226,7 @@ public class UIManager : MonoBehaviour
             latestLODValue = lodValue;
             //ui_manager.LODSlider.value = lodValue;
             Debug.Log(lodValue);
-            //FindObjectOfType<Reader>().SplitTreeToLOD(lodValue, false);
+            FindObjectOfType<PlacementManager>().SplitOctreeLOD(lodValue);
         }
 
 
@@ -238,7 +238,7 @@ public class UIManager : MonoBehaviour
         if (reader != null)
         {
             if (reader.averageSpectralM != null && reader.averageSpectralK != null && reader.averageSpectralG != null && reader.averageSpectralF != null && reader.averageSpectralA != null)
-                debugText.text = "LOD Level: " + FindObjectOfType<PlacementManager>().latestLODValue + "\n" +
+                debugText.text = "LOD: " + FindObjectOfType<PlacementManager>().latestLODValue + "\n" +
                     "# Partikel: " + (reader.averageSpectralM.Count + reader.averageSpectralK.Count + reader.averageSpectralG.Count + reader.averageSpectralF.Count + reader.averageSpectralA.Count) + "\n" +
                     "Distanz: + " + FindObjectOfType<PlacementManager>().dist.ToString("F2"); 
         }

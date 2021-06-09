@@ -4,7 +4,6 @@ using UnityEngine;
 using TMPro;
 using Microsoft.MixedReality.Toolkit;
 using Microsoft.MixedReality.Toolkit.SpatialAwareness;
-using DataStructures.ViliWonka.KDTree;
 using System;
 
 public class SpawnSpheres : MonoBehaviour
@@ -153,45 +152,4 @@ public class SpawnSpheres : MonoBehaviour
     {
         paused = !paused;
     }
-
-    public void Query()
-    {
-        Vector3 pos = queryPos.transform.localPosition;
-
-        QueryTree(pos);
-    }
-
-    public void QueryTree(Vector3 position)
-    {
-        //Query.KDQuery query = new Query.KDQuery();
-        KDQuery query = new KDQuery();
-
-        List<int> results = new List<int>();
-
-        // spherical query
-        //query.Radius(tree, position, radius, results);
-
-        // returns k nearest points         
-        //query.KNearest(tree, position, k, results);
-
-        // bounds query
-        //query.Interval(tree, min, max, results);
-
-        // closest point query
-        //query.ClosestPoint(FindObjectOfType<Reader>().tree, position, results);
-
-        int index = 0;
-        for (int i = 0; i < results.Count; i++)
-        {
-            index = results[i];
-            //Vector3 p = FindObjectOfType<Reader>().pointCloud[results[i]];
-            //query.DrawLastQuery();
-            //debugCube.transform.localPosition = p;
-            //Debug.Log(p);
-            //Instantiate(tetraPrefab, this.transform.position + p, Quaternion.identity, this.transform);
-        }
-
-        //FindObjectOfType<NetworkManager>().SendQueryResult(index);
-    }
-
 }
