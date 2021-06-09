@@ -13,8 +13,6 @@ public class Reader : MonoBehaviour
 {
     //Create a custom struct and apply [Serializable] attribute to it
     
-
-    public TextAsset file;
     internal SpawnSpheres spawner;
     internal HttpFileFetcher http_fetcher;
     internal UIManager ui_manager;
@@ -41,21 +39,11 @@ public class Reader : MonoBehaviour
     public List<Tuple<Vector3, float>> averageSpectralG;
     public List<Tuple<Vector3, float>> averageSpectralF;
     public List<Tuple<Vector3, float>> averageSpectralA;
-    //public List<KDNode> averageSpectralK;
-    //public List<KDNode> averageSpectralG;
-    //public List<KDNode> averageSpectralF;
-    //public List<KDNode> averageSpectralA;
-    public List<float> averageSpectralDistanceM;
-    public List<float> averageSpectralDistanceK;
-    public List<float> averageSpectralDistanceG;
-    public List<float> averageSpectralDistanceF;
-    public List<float> averageSpectralDistanceA;
 
-    internal KDTree tree;
-
-    public List<Vector3> averagePoints;
-    public bool average;
-
+    internal PointOctree<CelestialBody> octree;
+    public List<PointOctreeNode<CelestialBody>> nodeList;
+    //internal KDTree tree;
+    
     void Start()
     {
         http_fetcher = FindObjectOfType<HttpFileFetcher>();
@@ -65,7 +53,6 @@ public class Reader : MonoBehaviour
         Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/HoloLens Data");
         //File.Create(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/HoloLens Data/empty.txt");
 
-        averagePoints = new List<Vector3>();
     }
 
     void Update()
@@ -103,7 +90,7 @@ public class Reader : MonoBehaviour
         pointCloud = new Vector3[arraySize];
         celestialBodyCloud = new CelestialBody[arraySize];
         //pointCloud = new Vector3[69593];
-
+        octree = new PointOctree<CelestialBody>(2, Vector3.zero, 0.000000025f);
 
         CultureInfo ci = (CultureInfo)CultureInfo.CurrentCulture.Clone();
         ci.NumberFormat.CurrencyDecimalSeparator = ".";
@@ -131,7 +118,7 @@ public class Reader : MonoBehaviour
                     position = new Vector3(inputX, inputY, inputZ),
                     temperature = inputTemp
                 };
-
+                
                 if (inputTemp <= 3700)
                 {
                     spectralMIndex.Add(i);
@@ -152,7 +139,7 @@ public class Reader : MonoBehaviour
                 {
                     spectralAIndex.Add(i);
                 }
-
+                octree.Add(celestialBodyCloud[i], celestialBodyCloud[i].position);
                 pointCloud[i] = new Vector3(inputX, inputY, inputZ);
                 i++;
             }
@@ -162,30 +149,31 @@ public class Reader : MonoBehaviour
             Debug.Log("Ende der Datei erreicht: " + e.GetType().Name);
         }
 
-        int maxPointsPerLeafNode = 1;
-        tree = new KDTree(pointCloud, maxPointsPerLeafNode, this);
-        tree.SetRootNodeVecAndTemp();
-        Debug.Log(tree.kdNodesCount);
-        ui_manager.SetLODSliderMax(tree.depth);
+        //int maxPointsPerLeafNode = 1;
+        //tree = new KDTree(pointCloud, maxPointsPerLeafNode, this);
+        //tree.SetRootNodeVecAndTemp();
+        //Debug.Log(tree.kdNodesCount);
         
-        Debug.Log("Root X: " + tree.RootNode.averagePositionOfNodes.x);
-        Debug.Log("Root Y: " + tree.RootNode.averagePositionOfNodes.y);
-        Debug.Log("Root Z: " + tree.RootNode.averagePositionOfNodes.z);
-        Debug.Log("Root Temp: " + tree.RootNode.averageTempOfNodes);
+        
+        //Debug.Log("Root X: " + tree.RootNode.averagePositionOfNodes.x);
+        //Debug.Log("Root Y: " + tree.RootNode.averagePositionOfNodes.y);
+        //Debug.Log("Root Z: " + tree.RootNode.averagePositionOfNodes.z);
+        //Debug.Log("Root Temp: " + tree.RootNode.averageTempOfNodes);
 
-        Debug.Log("RootNeg X: " + tree.RootNode.negativeChild.averagePositionOfNodes.x);
-        Debug.Log("RootNeg Y: " + tree.RootNode.negativeChild.averagePositionOfNodes.y);
-        Debug.Log("RootNeg Z: " + tree.RootNode.negativeChild.averagePositionOfNodes.z);
-        Debug.Log("RootNeg Temp: " + tree.RootNode.negativeChild.averageTempOfNodes);
+        //Debug.Log("RootNeg X: " + tree.RootNode.negativeChild.averagePositionOfNodes.x);
+        //Debug.Log("RootNeg Y: " + tree.RootNode.negativeChild.averagePositionOfNodes.y);
+        //Debug.Log("RootNeg Z: " + tree.RootNode.negativeChild.averagePositionOfNodes.z);
+        //Debug.Log("RootNeg Temp: " + tree.RootNode.negativeChild.averageTempOfNodes);
 
-        Debug.Log("RootPos X: " + tree.RootNode.positiveChild.averagePositionOfNodes.x);
-        Debug.Log("RootPos Y: " + tree.RootNode.positiveChild.averagePositionOfNodes.y);
-        Debug.Log("RootPos Z: " + tree.RootNode.positiveChild.averagePositionOfNodes.z);
-        Debug.Log("RootPos Temp: " + tree.RootNode.positiveChild.averageTempOfNodes);
+        //Debug.Log("RootPos X: " + tree.RootNode.positiveChild.averagePositionOfNodes.x);
+        //Debug.Log("RootPos Y: " + tree.RootNode.positiveChild.averagePositionOfNodes.y);
+        //Debug.Log("RootPos Z: " + tree.RootNode.positiveChild.averagePositionOfNodes.z);
+        //Debug.Log("RootPos Temp: " + tree.RootNode.positiveChild.averageTempOfNodes);
 
         binaryReader.Close();
+        //StartCoroutine(FindLowestLODLevel());
         //Debug.Log(tree.depth);
-        //ui_manager.SetLODSlider(tree.depth);
+        ui_manager.SetLODSliderMax(35);
         //Debug.Log(GetNumberOfLeafNodes(tree.RootNode));
         //SpawnSpheres spawner = FindObjectOfType<SpawnSpheres>();
         if (spawner != null)
@@ -199,7 +187,36 @@ public class Reader : MonoBehaviour
             //spawner.ApplyToParticleSystem('A', spectralAIndex);
         }
         //Array.Sort(celestialBodyCloud, new CelestialBodyComparerX());
+        ui_manager.loadDataButton.SetActive(false);
+
         yield return null;
+        Debug.Log(celestialBodyCloud.Length);
+        octree.SetRootNodeVecAndTemp();
+        Debug.Log("Octree depth: " + octree.depth);
+        ui_manager.SetLODSliderMax(octree.depth);
+        Debug.Log("Octree count:" + octree.Count);
+        Debug.Log("Octree root has objects:" + octree.rootNode.HasAnyObjects());
+        Debug.Log("Octree root has children:" + octree.rootNode.children.Length);
+        Debug.Log("Octree root has direct objects: " + octree.rootNode.objects.Count);
+        Debug.Log("Octree root has average pos: " + octree.rootNode.averagePositionOfNodes.x + " " + octree.rootNode.averagePositionOfNodes.y + " " + octree.rootNode.averagePositionOfNodes.z);
+        Debug.Log("Octree root has average temp: " + octree.rootNode.averageTempOfNodes);
+        Debug.Log("Octree root has depth: " + octree.rootNode.nodeDepth);
+
+        foreach (PointOctreeNode<CelestialBody>.OctreeObject celBody in octree.rootNode.objects)
+        {
+            Debug.Log("Temp: " + celBody.Obj.temperature);
+        }
+        foreach (PointOctreeNode<CelestialBody> celBody in octree.rootNode.children)
+        {
+            Debug.Log("Average Pos of Child of Root: " + celBody.averagePositionOfNodes.x + " "  + celBody.averagePositionOfNodes.y + " " + celBody.averagePositionOfNodes.z);
+            Debug.Log("Average Temp of Child of Root: " + celBody.averageTempOfNodes);
+            Debug.Log("Octree root child has depth: " + celBody.nodeDepth);
+
+            //Debug.Log("Temp: " + ((CelestialBody)celBody.Obj).temperature);
+            //average.Add(celBody.Obj.position);
+            //averageTempList.Add(celBody.Obj.temperature);
+        }
+        
     }
 
     public int GetNumberOfLeafNodes(KDNode node)
@@ -219,43 +236,52 @@ public class Reader : MonoBehaviour
         }
     }
 
-    public void SplitTreeToLOD(int maxDepth)
-    {
-        averagePoints.Clear();
+    //public IEnumerator FindLowestLODLevel()
+    //{
+    //    for(int i = 0; i < tree.depth; i++)
+    //    {
+    //        SplitTreeToLOD(i, true);
 
-        Queue<KDNode> nodeStack = new Queue<KDNode>();
-        List<KDNode> nodeList = new List<KDNode>();
-        //Debug.Log(tree.RootNode.Count);
-        KDNode tempNode = tree.RootNode;
-        nodeStack.Enqueue(tempNode);
-        //Debug.Log(nodeStack);
-        while (nodeStack.Count > 0)
+    //        int sumOfPoints = averageSpectralM.Count + averageSpectralK.Count + averageSpectralG.Count + averageSpectralF.Count + averageSpectralA.Count;
+
+    //        if (sumOfPoints > (float)tree.Count * 0.05f)
+    //        {
+    //            FindObjectOfType<PlacementManager>().lowestLOD = (i - 1);
+    //            break;
+    //        }
+
+    //        yield return new WaitForEndOfFrame();
+    //    }
+    //}
+
+    public void SplitOctreeLOD(int maxDepth)
+    {
+        Queue<PointOctreeNode<CelestialBody>> nodeQueue = new Queue<PointOctreeNode<CelestialBody>>(); 
+        nodeList = new List<PointOctreeNode<CelestialBody>>();
+
+        PointOctreeNode<CelestialBody> tempNode = octree.rootNode;
+
+        nodeQueue.Enqueue(tempNode);
+
+        while (nodeQueue.Count > 0)
         {
-            tempNode = nodeStack.Dequeue();
+            tempNode = nodeQueue.Dequeue();
 
 
             //Debug.Log(tempNode);
-            if (tempNode != null && tempNode.nodeDepth == maxDepth || tempNode.Leaf)
+            if (tempNode != null && tempNode.nodeDepth == maxDepth || !tempNode.HasChildren)
             {
                 nodeList.Add(tempNode);
                 continue;
             }
-            else if (tempNode != null && tempNode.nodeDepth < maxDepth && !tempNode.Leaf)
+            else if (tempNode != null && tempNode.nodeDepth < maxDepth && tempNode.HasChildren)
             {
-
-                if (tempNode.negativeChild.Count != 0)
+                foreach (PointOctreeNode<CelestialBody> childNode in tempNode.children)
                 {
-
-                    nodeStack.Enqueue(tempNode.negativeChild);
-                }
-                if (tempNode.positiveChild.Count != 0)
-                {
-
-                    nodeStack.Enqueue(tempNode.positiveChild);
+                    nodeQueue.Enqueue(childNode);
                 }
             }
         }
-        //Debug.Log(nodeList.Count);
 
         averageSpectralM = new List<Tuple<Vector3, float>>();
         averageSpectralK = new List<Tuple<Vector3, float>>();
@@ -264,83 +290,188 @@ public class Reader : MonoBehaviour
         averageSpectralA = new List<Tuple<Vector3, float>>();
 
 
-        foreach (KDNode node in nodeList)
+        foreach (PointOctreeNode<CelestialBody> node in nodeList)
         {
-            if(node.Leaf)
+            
+            if (!node.HasChildren)
             {
-                for (int i = node.start; i < node.end; i++)
+                foreach (PointOctreeNode<CelestialBody>.OctreeObject cel in node.objects)
                 {
-                    if (celestialBodyCloud[tree.Permutation[i]].temperature <= 3700)
+                    if (cel.Obj.temperature <= 3700)
                     {
-                        averageSpectralM.Add(new Tuple<Vector3, float>(celestialBodyCloud[tree.Permutation[i]].position, spawner.particleSize));
+                        averageSpectralM.Add(new Tuple<Vector3, float>(cel.Obj.position, spawner.particleSize));
                     }
-                    else if (celestialBodyCloud[tree.Permutation[i]].temperature > 3700 && celestialBodyCloud[tree.Permutation[i]].temperature <= 5200)
+                    else if (cel.Obj.temperature > 3700 && cel.Obj.temperature <= 5200)
                     {
-                        averageSpectralK.Add(new Tuple<Vector3, float>(celestialBodyCloud[tree.Permutation[i]].position, spawner.particleSize));
+                        averageSpectralK.Add(new Tuple<Vector3, float>(cel.Obj.position, spawner.particleSize));
                     }
-                    else if (celestialBodyCloud[tree.Permutation[i]].temperature > 5200 && celestialBodyCloud[tree.Permutation[i]].temperature <= 6000)
+                    else if (cel.Obj.temperature > 5200 && cel.Obj.temperature <= 6000)
                     {
-                        averageSpectralG.Add(new Tuple<Vector3, float>(celestialBodyCloud[tree.Permutation[i]].position, spawner.particleSize));
+                        averageSpectralG.Add(new Tuple<Vector3, float>(cel.Obj.position, spawner.particleSize));
                     }
-                    else if (celestialBodyCloud[tree.Permutation[i]].temperature > 6000 && celestialBodyCloud[tree.Permutation[i]].temperature <= 7500)
+                    else if (cel.Obj.temperature > 6000 && cel.Obj.temperature <= 7500)
                     {
-                        averageSpectralF.Add(new Tuple<Vector3, float>(celestialBodyCloud[tree.Permutation[i]].position, spawner.particleSize));
+                        averageSpectralF.Add(new Tuple<Vector3, float>(cel.Obj.position, spawner.particleSize));
                     }
-                    else if (celestialBodyCloud[tree.Permutation[i]].temperature > 7500 && celestialBodyCloud[tree.Permutation[i]].temperature <= 10000)
+                    else if (cel.Obj.temperature > 7500 && cel.Obj.temperature <= 10000)
                     {
-                        averageSpectralA.Add(new Tuple<Vector3, float>(celestialBodyCloud[tree.Permutation[i]].position, spawner.particleSize));
+                        averageSpectralA.Add(new Tuple<Vector3, float>(cel.Obj.position, spawner.particleSize));
                     }
                 }
             }
             else
             {
-                float countRatio = (float)node.Count / (float)tree.Count;
+                float countRatio = 0;
                 float size = Mathf.Lerp(spawner.particleSize, 2, countRatio);
                 if (node.averageTempOfNodes <= 3700)
                 {
-                    averageSpectralM.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, size));
+                    averageSpectralM.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, node.distanceFromAverage));
                 }
                 else if (node.averageTempOfNodes > 3700 && node.averageTempOfNodes <= 5200)
                 {
-                    averageSpectralK.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, size));
+                    averageSpectralK.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, node.distanceFromAverage));
                 }
                 else if (node.averageTempOfNodes > 5200 && node.averageTempOfNodes <= 6000)
                 {
-                    averageSpectralG.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, size));
+                    averageSpectralG.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, node.distanceFromAverage));
                 }
                 else if (node.averageTempOfNodes > 6000 && node.averageTempOfNodes <= 7500)
                 {
-                    averageSpectralF.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, size));
+                    averageSpectralF.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, node.distanceFromAverage));
                 }
                 else if (node.averageTempOfNodes > 7500 && node.averageTempOfNodes <= 10000)
                 {
-                    averageSpectralA.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, size));
+                    averageSpectralA.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, node.distanceFromAverage));
                 }
             }
-            //Debug.Log(nodeList[0].Count);
-            
-            //pointsToSpawn.Add(node.averagePositionOfNodes);
 
-            //List<Vector3> pointsInNode = new List<Vector3>();
-            //for (int i = node.start; i < node.end; i++)
-            //{
-            //    pointsInNode.Add(pointCloud[tree.Permutation[i]]);
-            //}
-            //Vector3 averagePoint = new Vector3(
-            //    pointsInNode.Average(x => x.x),
-            //    pointsInNode.Average(x => x.y),
-            //    pointsInNode.Average(x => x.z));
-            //Debug.Log(averagePoint);
-            //averagePoints.Add(averagePoint);
         }
-        spawner.ApplyToParticleSystem('M', averageSpectralM);
-        spawner.ApplyToParticleSystem('K', averageSpectralK);
-        spawner.ApplyToParticleSystem('G', averageSpectralG);
-        spawner.ApplyToParticleSystem('F', averageSpectralF);
-        spawner.ApplyToParticleSystem('A', averageSpectralA);
+        //Debug.Log(averageSpectralM[1].Item1);
+        //if (!calculate)
+        //{
+            spawner.ApplyToParticleSystem('M', averageSpectralM);
+            spawner.ApplyToParticleSystem('K', averageSpectralK);
+            spawner.ApplyToParticleSystem('G', averageSpectralG);
+            spawner.ApplyToParticleSystem('F', averageSpectralF);
+            spawner.ApplyToParticleSystem('A', averageSpectralA);
+        //}
 
         ui_manager.SetLegendCount(averageSpectralM.Count, averageSpectralK.Count, averageSpectralG.Count, averageSpectralF.Count, averageSpectralA.Count);
+
     }
+
+    //public void SplitTreeToLOD(int maxDepth, bool calculate)
+    //{
+        
+
+    //    Queue<KDNode> nodeStack = new Queue<KDNode>();
+    //    List<KDNode> nodeList = new List<KDNode>();
+    //    //Debug.Log(tree.RootNode.Count);
+    //    KDNode tempNode = tree.RootNode;
+    //    nodeStack.Enqueue(tempNode);
+    //    //Debug.Log(nodeStack);
+    //    while (nodeStack.Count > 0)
+    //    {
+    //        tempNode = nodeStack.Dequeue();
+
+
+    //        //Debug.Log(tempNode);
+    //        if (tempNode != null && tempNode.nodeDepth == maxDepth || tempNode.Leaf)
+    //        {
+    //            nodeList.Add(tempNode);
+    //            continue;
+    //        }
+    //        else if (tempNode != null && tempNode.nodeDepth < maxDepth && !tempNode.Leaf)
+    //        {
+
+    //            if (tempNode.negativeChild.Count != 0)
+    //            {
+
+    //                nodeStack.Enqueue(tempNode.negativeChild);
+    //            }
+    //            if (tempNode.positiveChild.Count != 0)
+    //            {
+
+    //                nodeStack.Enqueue(tempNode.positiveChild);
+    //            }
+    //        }
+    //    }
+    //    //Debug.Log(nodeList.Count);
+
+    //    averageSpectralM = new List<Tuple<Vector3, float>>();
+    //    averageSpectralK = new List<Tuple<Vector3, float>>();
+    //    averageSpectralG = new List<Tuple<Vector3, float>>();
+    //    averageSpectralF = new List<Tuple<Vector3, float>>();
+    //    averageSpectralA = new List<Tuple<Vector3, float>>();
+
+
+    //    foreach (KDNode node in nodeList)
+    //    {
+    //        if(node.Leaf)
+    //        {
+    //            for (int i = node.start; i < node.end; i++)
+    //            {
+    //                if (celestialBodyCloud[tree.Permutation[i]].temperature <= 3700)
+    //                {
+    //                    averageSpectralM.Add(new Tuple<Vector3, float>(celestialBodyCloud[tree.Permutation[i]].position, spawner.particleSize));
+    //                }
+    //                else if (celestialBodyCloud[tree.Permutation[i]].temperature > 3700 && celestialBodyCloud[tree.Permutation[i]].temperature <= 5200)
+    //                {
+    //                    averageSpectralK.Add(new Tuple<Vector3, float>(celestialBodyCloud[tree.Permutation[i]].position, spawner.particleSize));
+    //                }
+    //                else if (celestialBodyCloud[tree.Permutation[i]].temperature > 5200 && celestialBodyCloud[tree.Permutation[i]].temperature <= 6000)
+    //                {
+    //                    averageSpectralG.Add(new Tuple<Vector3, float>(celestialBodyCloud[tree.Permutation[i]].position, spawner.particleSize));
+    //                }
+    //                else if (celestialBodyCloud[tree.Permutation[i]].temperature > 6000 && celestialBodyCloud[tree.Permutation[i]].temperature <= 7500)
+    //                {
+    //                    averageSpectralF.Add(new Tuple<Vector3, float>(celestialBodyCloud[tree.Permutation[i]].position, spawner.particleSize));
+    //                }
+    //                else if (celestialBodyCloud[tree.Permutation[i]].temperature > 7500 && celestialBodyCloud[tree.Permutation[i]].temperature <= 10000)
+    //                {
+    //                    averageSpectralA.Add(new Tuple<Vector3, float>(celestialBodyCloud[tree.Permutation[i]].position, spawner.particleSize));
+    //                }
+    //            }
+    //        }
+    //        else
+    //        {
+    //            float countRatio = (float)node.Count / (float)tree.Count;
+    //            float size = Mathf.Lerp(spawner.particleSize, 2, countRatio);
+    //            if (node.averageTempOfNodes <= 3700)
+    //            {
+    //                averageSpectralM.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, size));
+    //            }
+    //            else if (node.averageTempOfNodes > 3700 && node.averageTempOfNodes <= 5200)
+    //            {
+    //                averageSpectralK.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, size));
+    //            }
+    //            else if (node.averageTempOfNodes > 5200 && node.averageTempOfNodes <= 6000)
+    //            {
+    //                averageSpectralG.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, size));
+    //            }
+    //            else if (node.averageTempOfNodes > 6000 && node.averageTempOfNodes <= 7500)
+    //            {
+    //                averageSpectralF.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, size));
+    //            }
+    //            else if (node.averageTempOfNodes > 7500 && node.averageTempOfNodes <= 10000)
+    //            {
+    //                averageSpectralA.Add(new Tuple<Vector3, float>(node.averagePositionOfNodes, size));
+    //            }
+    //        }
+            
+    //    }
+    //    //Debug.Log(averageSpectralM[1].Item1);
+    //    if (!calculate)
+    //    {
+    //        spawner.ApplyToParticleSystem('M', averageSpectralM);
+    //        spawner.ApplyToParticleSystem('K', averageSpectralK);
+    //        spawner.ApplyToParticleSystem('G', averageSpectralG);
+    //        spawner.ApplyToParticleSystem('F', averageSpectralF);
+    //        spawner.ApplyToParticleSystem('A', averageSpectralA);
+    //    }
+
+    //    ui_manager.SetLegendCount(averageSpectralM.Count, averageSpectralK.Count, averageSpectralG.Count, averageSpectralF.Count, averageSpectralA.Count);
+    //}
 
     public void SendToParticleSystem(char spectralClass)
     {
@@ -393,6 +524,8 @@ public class Reader : MonoBehaviour
     }
 
 
+
+    
 }
 
 [Serializable]

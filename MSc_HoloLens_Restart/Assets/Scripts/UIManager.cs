@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using System;
 
 public class UIManager : MonoBehaviour
 {
@@ -49,6 +50,7 @@ public class UIManager : MonoBehaviour
     TextMeshProUGUI selectedFile_text;
     public GameObject enableAdjustButton;
     public GameObject disableAdjustButton;
+    public GameObject loadDataButton;
 
     public GameObject LODSliderObj;
     public Slider LODSlider;
@@ -76,6 +78,9 @@ public class UIManager : MonoBehaviour
     public StepSlider stepSlider;
     public int latestLODValue;
 
+    public TextMeshProUGUI debugText;
+    public GameObject hud;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -101,6 +106,15 @@ public class UIManager : MonoBehaviour
     {
         //RotateObjectToCamera(hololensMenuTransform);
         HandleKeyboardInput();
+        PlaceHUD();
+        DebugText();
+    }
+
+    private void PlaceHUD()
+    {
+        hud.transform.position = Camera.main.transform.position + Camera.main.transform.forward;
+        hud.transform.LookAt((hud.transform.position - Camera.main.transform.position) + hud.transform.position);
+        hud.transform.rotation = Camera.main.transform.rotation;
     }
 
     public void ToogleMenuPanels(bool connectPanelBool, bool progressPanelBool, bool lobbyPanelBool)
@@ -212,13 +226,23 @@ public class UIManager : MonoBehaviour
             latestLODValue = lodValue;
             //ui_manager.LODSlider.value = lodValue;
             Debug.Log(lodValue);
-            FindObjectOfType<Reader>().SplitTreeToLOD(lodValue);
+            //FindObjectOfType<Reader>().SplitTreeToLOD(lodValue, false);
         }
 
 
         //reader.SplitTreeToLOD((int)LODSlider.value);
     }
 
+    public void DebugText()
+    {
+        if (reader != null)
+        {
+            if (reader.averageSpectralM != null && reader.averageSpectralK != null && reader.averageSpectralG != null && reader.averageSpectralF != null && reader.averageSpectralA != null)
+                debugText.text = "LOD Level: " + FindObjectOfType<PlacementManager>().latestLODValue + "\n" +
+                    "# Partikel: " + (reader.averageSpectralM.Count + reader.averageSpectralK.Count + reader.averageSpectralG.Count + reader.averageSpectralF.Count + reader.averageSpectralA.Count) + "\n" +
+                    "Distanz: + " + FindObjectOfType<PlacementManager>().dist.ToString("F2"); 
+        }
+    }
 
 
     public void IncreaseLOD()
@@ -226,13 +250,13 @@ public class UIManager : MonoBehaviour
         LODSlider.value += 1;
 
         stepSlider.SliderValue = 1;
-        reader.SplitTreeToLOD((int)LODSlider.value);
+        //reader.SplitTreeToLOD((int)LODSlider.value, false);
     }
 
     public void DecreaseLOD()
     {
         LODSlider.value -= 1;
-        reader.SplitTreeToLOD((int)LODSlider.value);
+        //reader.SplitTreeToLOD((int)LODSlider.value, false);
     }
 
     public void SetLegendColor()

@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: TransparentWhite
+  m_Name: HighlightRimBlue
   m_Shader: {fileID: 4800000, guid: 5bdea20278144b11916d77503ba1467a, type: 3}
   m_ShaderKeywords: _ALPHAADDITIVE_ON _ALPHABLEND_ON _BORDER_LIGHT_USES_HOVER_COLOR
     _DISABLE_ALBEDO_MAP _HOVER_LIGHT _RIM_LIGHT _SPECULAR_HIGHLIGHTS
@@ -151,7 +151,7 @@ Material:
     - _RefractiveIndex: 1.1
     - _RenderQueueOverride: -1
     - _RimLight: 1
-    - _RimPower: 4.12
+    - _RimPower: 1.92
     - _RoundCornerMargin: 0
     - _RoundCornerPower: 0.4
     - _RoundCornerRadius: 0.25
@@ -191,6 +191,6 @@ Material:
     - _ProximityLightCenterColorOverride: {r: 1, g: 0, b: 0, a: 0}
     - _ProximityLightMiddleColorOverride: {r: 0, g: 1, b: 0, a: 0.5}
     - _ProximityLightOuterColorOverride: {r: 0, g: 0, b: 1, a: 1}
-    - _RimColor: {r: 1, g: 1, b: 1, a: 1}
+    - _RimColor: {r: 0, g: 0.86873865, b: 1, a: 1}
     - _RoundCornersRadius: {r: 0.5, g: 0.5, b: 0.5, a: 0.5}
   m_BuildTextureStacks: []
