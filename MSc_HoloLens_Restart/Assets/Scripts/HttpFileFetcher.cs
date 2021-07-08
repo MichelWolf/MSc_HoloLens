@@ -22,30 +22,6 @@ public class HttpFileFetcher : MonoBehaviour
         serverFiles = new List<string>();
         localFiles = new List<string>();
         ResetLists();
-        //string fileName = "parsedValues100.bin";
-        //StartCoroutine(FetchDataCoroutine());
-        //if (!File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/HoloLens Data/" + fileName))
-        //{
-        //    //StartCoroutine(FetchFileCoroutine(fileName));
-        //}
-
-        ////Debug.Log(Environment.SpecialFolder.ApplicationData);
-        ////Debug.Log(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
-        //string[] tmp = Directory.GetFiles(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/HoloLens Data/");
-        //foreach (string s in tmp)
-        //{
-        //    localFiles.Add(Path.GetFileName(s));
-        //    //Debug.Log("File in directory: " + Path.GetFileName(s));
-        //}
-        //ui_manager.SetLocalFileDropdown(localFiles);
-
-
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 
     public void GetData()

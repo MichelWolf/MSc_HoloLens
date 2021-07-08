@@ -8,23 +8,11 @@ using System;
 
 public class SpawnSpheres : MonoBehaviour
 {
-    public double maxObjects = 1700000000;
-    public double currentSpawnedObjects = 0;
-    public float spawnTime = 0.5f;
-    public float spawnRate = 100;
-    public GameObject spherePrefab;
-    public GameObject quadPrefab;
-    public GameObject tetraPrefab;
-    public GameObject count;
 
     public GameObject queryPos;
-    public GameObject debugCube;
     
     bool firstFrame = true;
-
-    bool spawning = false;
-    bool paused = false;
-
+   
     public ParticleSystem particleSystemM;
     public ParticleSystem particleSystemK;
     public ParticleSystem particleSystemG;
@@ -39,14 +27,12 @@ public class SpawnSpheres : MonoBehaviour
 
     public float particleSize = 1;
 
-    Reader reader;
     
     // Start is called before the first frame update
     void Start()
     {
         
 
-        reader = FindObjectOfType<Reader>();
     }
 
     // Update is called once per frame
@@ -148,8 +134,4 @@ public class SpawnSpheres : MonoBehaviour
         }
     }
 
-    public void PauseSpawn()
-    {
-        paused = !paused;
-    }
 }

@@ -15,7 +15,7 @@ public class PointOctreeNode<T> {
 	float minSize;
 
 	// Bounding box that represents this node
-	Bounds bounds = default(Bounds);
+	internal Bounds bounds = default(Bounds);
 
 	// Objects in this node
 	public List<OctreeObject> objects = new List<OctreeObject>();
@@ -30,7 +30,7 @@ public class PointOctreeNode<T> {
 
 	// If there are already NUM_OBJECTS_ALLOWED in a node, we split it into children
 	// A generally good number seems to be something around 8-15
-	const int NUM_OBJECTS_ALLOWED = 8;
+	const int NUM_OBJECTS_ALLOWED = 10;
 
 	// For reverting the bounds size after temporary changes
 	Vector3 actualBoundsSize;

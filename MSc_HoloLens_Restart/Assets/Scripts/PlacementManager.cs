@@ -10,19 +10,18 @@ public class PlacementManager : MonoBehaviour, IPunObservable
 {
 
     internal UIManager ui_manager;
+
     public GameObject parentCube;
     public GameObject visualCube;
     internal Vector3 visualScale;
 
     public GameObject handMenu;
-    public GameObject queryObject;
     public TextMeshProUGUI roiCountText;
-
-    public GameObject centerCircle;
-
+    
     public GameObject anchor;
 
     internal SpawnSpheres spawner;
+    internal DataManager data_manager;
 
     Camera mainCam;
 
@@ -32,15 +31,39 @@ public class PlacementManager : MonoBehaviour, IPunObservable
 
     public bool dynamicLOD = true;
     public float dist = 0;
+    public GameObject dynamicLODOnButtonHand;
     public GameObject dynamicLODOnButton;
+    public GameObject dynamicLODOffButtonHand;
     public GameObject dynamicLODOffButton;
 
-    public GameObject queryResultPosition;
-    public GameObject queryResultTooltip;
+    internal Coroutine dynamicLODCoroutine;
 
     public float nearestDistanceSoFar;
 
-    public Reader reader;
+    public bool ROI;
+
+    [Header("Query")]
+    public GameObject queryObjectArea;
+    public GameObject queryObjectNearest;
+    public GameObject queryResultPosition;
+    public GameObject queryResultTooltip;
+
+    public GameObject solTooltip;
+    public GameObject solTooltipTarget;
+
+    public GameObject galacticCenterTooltip;
+    public GameObject galacticCenterTooltipTarget;
+
+    public GameObject sourceIDSearchTooltip;
+    public GameObject sourceIDSearchTooltipTarget;
+
+    public bool coroutineRunning = false;
+
+    internal Reader reader;
+
+    public GameObject debugSphere;
+    public GameObject northPole;
+    public GameObject zeroZero;
 
     PhotonView photonView;
     // Start is called before the first frame update
@@ -55,6 +78,14 @@ public class PlacementManager : MonoBehaviour, IPunObservable
         spawner = FindObjectOfType<SpawnSpheres>();
         mainCam = Camera.main;
         reader = FindObjectOfType<Reader>();
+        data_manager = FindObjectOfType<DataManager>();
+
+        ui_manager.SetHUDMapPosition(Vector3.zero, 1f);
+
+        Vector3 newRay = visualCube.transform.right;
+        Debug.Log(newRay);
+
+        
     }
 
     // Update is called once per frame
@@ -74,46 +105,13 @@ public class PlacementManager : MonoBehaviour, IPunObservable
             spawner.particleSystemA.transform.localScale = visualScale;
         }
 
-        if (dynamicLOD && FindObjectOfType<Reader>().octree != null)
+        if (!ROI && dynamicLOD && data_manager.octree != null)
         {
-            Vector3 camToCenter = (mainCam.transform.position - visualCube.transform.position);
-            centerCircle.transform.localPosition = camToCenter.normalized * 0.5f;
-
-            dist = Vector3.Distance(centerCircle.transform.position, mainCam.transform.position);
-            
-
-            if(camToCenter.magnitude < (centerCircle.transform.position - visualCube.transform.position).magnitude)
+            if (!coroutineRunning)
             {
-                dist = 0;
-            }
-
-            float t = dist / 2f;
-            lowestLOD = 0;
-            int lodValue = Mathf.Max(Mathf.FloorToInt(ui_manager.LODSlider.maxValue - (ui_manager.LODSlider.maxValue * t)), lowestLOD);
-            if(lodValue != latestLODValue)
-            {
-                latestLODValue = lodValue;
-                ui_manager.LODSlider.value = lodValue;
-
-                RemapAndApplyToStepSlider(lodValue, 0, 0, ui_manager.stepSlider.SliderStepDivisions, 1);
-                SplitOctreeLOD(lodValue);
+                dynamicLODCoroutine = StartCoroutine(data_manager.SplitOctreeLODWithPixelSize());
             }
         }
-    }
-
-    private void RemapAndApplyToStepSlider(int lodValue, int fromMin, int toMin, int fromMax, int toMax)
-    {
-        float fromAbs = lodValue - fromMin;
-        float fromMaxAbs = fromMax - fromMin;
-
-        float normal = fromAbs / fromMaxAbs;
-
-        float toMaxAbs = toMax - toMin;
-        float toAbs = toMaxAbs * normal;
-
-        float to = toAbs + toMin;
-
-        ui_manager.stepSlider.SliderValue = to;
     }
 
     public void EnableAdjustment()
@@ -125,14 +123,18 @@ public class PlacementManager : MonoBehaviour, IPunObservable
         MonoBehaviour[] compsParent = parentCube.GetComponents<MonoBehaviour>();
         foreach (MonoBehaviour c in compsParent)
         {
+
             c.enabled = true;
+
         }
         parentCube.GetComponent<BoxCollider>().enabled = true;
 
         MonoBehaviour[] compsVisual = visualCube.GetComponents<MonoBehaviour>();
         foreach (MonoBehaviour c in compsVisual)
         {
+
             c.enabled = false;
+
         }
         anchor.SetActive(true);
     }
@@ -146,30 +148,103 @@ public class PlacementManager : MonoBehaviour, IPunObservable
         MonoBehaviour[] compsParent = parentCube.GetComponents<MonoBehaviour>();
         foreach (MonoBehaviour c in compsParent)
         {
+
             c.enabled = false;
+
         }
         parentCube.GetComponent<BoxCollider>().enabled = false;
 
         MonoBehaviour[] compsVisual = visualCube.GetComponents<MonoBehaviour>();
         foreach (MonoBehaviour c in compsVisual)
         {
+
             c.enabled = true;
+
         }
         anchor.SetActive(false);
     }
 
-    public void ToggleDynamicLOD()
+    public void ToggleDynamicLOD(int boolean)
     {
-        dynamicLOD = !dynamicLOD;
-        dynamicLODOffButton.SetActive(dynamicLOD);
-        dynamicLODOnButton.SetActive(!dynamicLOD);
-        ui_manager.stepSlider.enabled = !dynamicLOD;
+        if (boolean == 0)
+        {
+            dynamicLOD = false;
+            dynamicLODOffButton.SetActive(false);
+            dynamicLODOffButtonHand.SetActive(false);
+            dynamicLODOnButton.SetActive(true);
+            dynamicLODOnButtonHand.SetActive(true);
+
+            StopCoroutine(dynamicLODCoroutine);
+            coroutineRunning = false;
+        }
+        else if(boolean == 1)
+        {
+            dynamicLOD = true;
+            dynamicLODOffButton.SetActive(true);
+            dynamicLODOffButtonHand.SetActive(true);
+            dynamicLODOnButton.SetActive(false);
+            dynamicLODOnButtonHand.SetActive(false);
+
+            if(ROI)
+            {
+                queryResultTooltip.SetActive(false);
+                queryResultPosition.SetActive(false);
+
+                sourceIDSearchTooltip.SetActive(false);
+                sourceIDSearchTooltipTarget.SetActive(false);
+            }
+
+            ROI = false;
+            ui_manager.SetHUDMapPosition(Vector3.zero, 1f);
+            ActivateSolGCTooltip(true);
+        }
+    }
+
+    public void ToggleDynamicLODAsRPC(int boolean)
+    {
+        photonView.RPC("RPC_ToogleDynamicLOD", RpcTarget.All, boolean);
+    }
+
+    [PunRPC]
+    public void RPC_ToogleDynamicLOD(int boolean)
+    {
+        ToggleDynamicLOD(boolean);
     }
 
     public void EnableQueryObject()
     {
-        queryObject.transform.position = handMenu.transform.position;
-        queryObject.SetActive(true);
+        queryObjectArea.transform.position = handMenu.transform.position;
+        queryObjectArea.SetActive(true);
+    }
+
+    public void QueryAreaObject()
+    {
+        photonView.RPC("RPC_QueryAreaObject", RpcTarget.All);
+    }
+
+    [PunRPC]
+    public void RPC_QueryAreaObject()
+    {
+        EnableQueryObject();
+    }
+
+
+
+    public void EnableQueryObjectNearest()
+    {
+        queryObjectNearest.transform.position = handMenu.transform.position;
+        queryObjectNearest.SetActive(true);
+    }
+
+    public void QueryNearestObject()
+    {
+        photonView.RPC("RPC_QueryNearestObject", RpcTarget.All);
+    }
+
+    [PunRPC]
+    public void RPC_QueryNearestObject()
+    {
+        EnableQueryObjectNearest();
     }
 
     public void ResetCube()
@@ -181,188 +256,230 @@ public class PlacementManager : MonoBehaviour, IPunObservable
 
     public void QueryTreeWithRadius()
     {
-        float radius = queryObject.transform.localScale.x / 2;
+        float radius = queryObjectArea.transform.localScale.x / 2;
 
-        queryObject.SetActive(false);
+        queryObjectArea.SetActive(false);
+        List<CelestialBody> results = null;
+        if(ROI)
+        {
+            results = data_manager.ROI_octree.GetListOfNearby(queryObjectArea.transform.localPosition, radius);
+        }
+        else
+        {
+            results = data_manager.octree.GetListOfNearby(queryObjectArea.transform.localPosition, radius);
+            StopCoroutine(dynamicLODCoroutine);
+            coroutineRunning = false;
+            ROI = true;
+        }
 
-        List<CelestialBody> results = reader.octree.GetListOfNearby(queryObject.transform.localPosition, radius);
+        data_manager.ROI_octree = new PointOctree<CelestialBody>(2, Vector3.zero, 0.000000025f);
+        data_manager.ROI_celestialBodyCloud = new CelestialBody[results.Count];
 
-        CalculateAverageLists(results, queryObject.transform.localPosition.x, queryObject.transform.localPosition.y, queryObject.transform.localPosition.z, radius);
-        dynamicLOD = false;
+        data_manager.CalculateAverageLists(results, queryObjectArea.transform.localPosition.x, queryObjectArea.transform.localPosition.y, queryObjectArea.transform.localPosition.z, radius);
+        ToggleDynamicLOD(0);
+
+        ActivateSolGCTooltip(false);
+
+        ui_manager.SetHUDMapPosition(queryObjectArea.transform.localPosition, radius);
+
+        queryResultTooltip.SetActive(false);
+        queryResultPosition.SetActive(false);
+
+        sourceIDSearchTooltip.SetActive(false);
+        sourceIDSearchTooltipTarget.SetActive(false);
     }
 
     public void QueryNearestPoint()
     {
-       
+        queryObjectNearest.SetActive(false);
         nearestDistanceSoFar = float.MaxValue;
-        List<CelestialBody> results = reader.octree.GetNearest(this, queryObject.transform.localPosition, float.MaxValue);
+        List<CelestialBody> results = null;
+        if (ROI)
+        {
+            results = data_manager.ROI_octree.GetNearest(this, queryObjectNearest.transform.localPosition, float.MaxValue);
+        }
+        else
+        {
+            results = data_manager.octree.GetNearest(this, queryObjectNearest.transform.localPosition, float.MaxValue);
+        }
+
 
         Debug.Log("Nearest result: " + results.Count);
 
         queryResultPosition.transform.localPosition = results[0].position;
         queryResultPosition.SetActive(true);
         queryResultTooltip.GetComponent<ToolTipConnector>().Target = queryResultPosition;
-        queryResultTooltip.GetComponent<ToolTip>().ToolTipText = results[0].position + "\n" + results[0].temperature;
         queryResultTooltip.SetActive(true);
+        queryResultTooltip.GetComponent<ToolTip>().ToolTipText = String.Format("Source ID: {0}\nPosition: {1},{2},{3}\nDistanz: {4} pc\nTemperatur: {5} K\nRadius: {6} Rsun", results[0].source_id, results[0].position.x, results[0].position.y, results[0].position.z, results[0].distance, results[0].temperature, results[0].radius);
     }
 
-    public void SplitOctreeLOD(int maxDepth)
+
+    public void QueryArea()
     {
-        Queue<PointOctreeNode<CelestialBody>> nodeQueue = new Queue<PointOctreeNode<CelestialBody>>();
-        reader.nodeList = new List<PointOctreeNode<CelestialBody>>();
-
-        PointOctreeNode<CelestialBody> tempNode = reader.octree.rootNode;
-
-        nodeQueue.Enqueue(tempNode);
-
-        while (nodeQueue.Count > 0)
-        {
-            tempNode = nodeQueue.Dequeue();
-
-
-            //Debug.Log(tempNode);
-            if (tempNode != null && tempNode.nodeDepth == maxDepth || !tempNode.HasChildren)
-            {
-                reader.nodeList.Add(tempNode);
-                continue;
-            }
-            else if (tempNode != null && tempNode.nodeDepth < maxDepth && tempNode.HasChildren)
-            {
-                foreach (PointOctreeNode<CelestialBody> childNode in tempNode.children)
-                {
-                    nodeQueue.Enqueue(childNode);
-                }
-            }
-        }
-
-        CalculateAverageLists(reader.nodeList);
-
-        ui_manager.SetLegendCount(reader.averageSpectralM.Count, reader.averageSpectralK.Count, reader.averageSpectralG.Count, reader.averageSpectralF.Count, reader.averageSpectralA.Count);
+        photonView.RPC("RPC_QueryArea", RpcTarget.All);
     }
 
-    public void CalculateAverageLists<T>(List<T> list, float x = 0, float y = 0, float z = 0, float radius = -1)
+    [PunRPC]
+    public void RPC_QueryArea()
     {
-        if (spawner == null)
-        {
-            spawner = FindObjectOfType<SpawnSpheres>();
-        }
-        reader.averageSpectralM.Clear();
-        reader.averageSpectralK.Clear();
-        reader.averageSpectralG.Clear();
-        reader.averageSpectralF.Clear();
-        reader.averageSpectralA.Clear();
-
-        for (int i = 0; i < list.Count; i++)
-        {
-            List<Vector3> position = new List<Vector3>();
-            List<int> temperature = new List<int>();
-            List<float> size = new List<float>();
-            if (typeof(T) == typeof(CelestialBody))
-            {
-                if (radius == -1)
-                {
-                    position.Add((list[i] as CelestialBody).position);
-                }
-                else
-                {
-                    Vector3 roiCenterToPoint = (list[i] as CelestialBody).position - new Vector3(x, y, z);
-                    float ratio = roiCenterToPoint.magnitude / radius;
-                    Vector3 newPosition = roiCenterToPoint.normalized * ratio;
-
-                    position.Add(newPosition);
-                }
-                temperature.Add((list[i] as CelestialBody).temperature);
-                size.Add(spawner.particleSize);
-            }
-            if (typeof(T) == typeof(PointOctreeNode<CelestialBody>))
-            {
-                if (!(list[i] as PointOctreeNode<CelestialBody>).HasChildren)
-                {
-                    foreach (PointOctreeNode<CelestialBody>.OctreeObject cel in (list[i] as PointOctreeNode<CelestialBody>).objects)
-                    {
-                        position.Add(cel.Obj.position);
-                        temperature.Add(cel.Obj.temperature);
-                        size.Add(spawner.particleSize);
-                    }
-                }
-                else
-                {
-                    position.Add((list[i] as PointOctreeNode<CelestialBody>).averagePositionOfNodes);
-                    temperature.Add((list[i] as PointOctreeNode<CelestialBody>).averageTempOfNodes);
-                    size.Add((list[i] as PointOctreeNode<CelestialBody>).distanceFromAverage);
-                }
-            }
-
-
-            for (int j = 0; j < temperature.Count; j++)
-            {
-                if (temperature[j] <= 3700)
-                {
-                    reader.averageSpectralM.Add(new Tuple<Vector3, float>(position[j], size[j]));
-                }
-                else if (temperature[j] > 3700 && temperature[j] <= 5200)
-                {
-                    reader.averageSpectralK.Add(new Tuple<Vector3, float>(position[j], size[j]));
-                }
-                else if (temperature[j] > 5200 && temperature[j] <= 6000)
-                {
-                    reader.averageSpectralG.Add(new Tuple<Vector3, float>(position[j], size[j]));
-                }
-                else if (temperature[j] > 6000 && temperature[j] <= 7500)
-                {
-                    reader.averageSpectralF.Add(new Tuple<Vector3, float>(position[j], size[j]));
-                }
-                else if (temperature[j] > 7500 && temperature[j] <= 10000)
-                {
-                    reader.averageSpectralA.Add(new Tuple<Vector3, float>(position[j], size[j]));
-                }
-            }
-        }
-
-        spawner.ApplyToParticleSystem('M', reader.averageSpectralM);
-        spawner.ApplyToParticleSystem('K', reader.averageSpectralK);
-        spawner.ApplyToParticleSystem('G', reader.averageSpectralG);
-        spawner.ApplyToParticleSystem('F', reader.averageSpectralF);
-        spawner.ApplyToParticleSystem('A', reader.averageSpectralA);
+        QueryTreeWithRadius();
     }
 
+    public void QueryNearest()
+    {
+        photonView.RPC("RPC_QueryNearest", RpcTarget.All);
+    }
+
+    [PunRPC]
+    public void RPC_QueryNearest()
+    {
+        QueryNearestPoint();
+    }
+
+
+    public IEnumerator SearchCelBodyWithSearchID(string searchID)
+    {
+        int count = 0;
+        CelestialBody result = null;
+        if (!ROI)
+        {
+            foreach (CelestialBody celBody in data_manager.celestialBodyCloud)
+            {
+                count++;
+                if(celBody.source_id.ToString() == searchID)
+                {
+                    result = celBody;
+                    break;
+                }
+
+                if(count > 2000)
+                {
+                    count = 0;
+                    yield return null;
+                }
+            }
+        }
+        else
+        {
+            foreach (CelestialBody celBody in data_manager.ROI_celestialBodyCloud)
+            {
+                count++;
+                if (celBody.source_id.ToString() == searchID)
+                {
+                    result = celBody;
+                    break;
+                }
+
+                if (count > 2000)
+                {
+                    count = 0;
+                    yield return null;
+                }
+            }
+        }
+
+        if(result != null)
+        {
+            sourceIDSearchTooltipTarget.transform.localPosition = result.position;
+            sourceIDSearchTooltipTarget.SetActive(true);
+            sourceIDSearchTooltip.SetActive(true);
+            sourceIDSearchTooltip.GetComponent<ToolTip>().ToolTipText = String.Format("Source ID: {0}\nPosition: {1},{2},{3}\nDistanz: {4} pc\nTemperatur: {5} K\nRadius: {6} Rsun", result.source_id, result.position.x, result.position.y, result.position.z, result.distance, result.temperature, result.radius);
+        }
+    }
+
+    public void SearchCelBody()
+    {
+        photonView.RPC("RPC_SearchCelBody", RpcTarget.All, ui_manager.sourceIDSearchString);
+    }
+
+    [PunRPC]
+    public void RPC_SearchCelBody(string searchID)
+    {
+        StartCoroutine(SearchCelBodyWithSearchID(searchID));
+    }
+
+    public void PlaceROIWithAngle(float ra, float dec, float distance, float range)
+    {
+        queryObjectArea.transform.localPosition = zeroZero.transform.localPosition;
+
+        queryObjectArea.transform.RotateAround(visualCube.transform.position, northPole.transform.position - visualCube.transform.position, ra);
+        queryObjectArea.transform.RotateAround(visualCube.transform.position, Vector3.Cross(queryObjectArea.transform.localPosition, northPole.transform.position - visualCube.transform.position), dec);
+
+        queryObjectArea.transform.localPosition = queryObjectArea.transform.localPosition.normalized * (distance / data_manager.maxDistance);
+        queryObjectArea.transform.localRotation = Quaternion.identity;
+
+        queryObjectArea.transform.localScale = new Vector3(range, range, range);
+    }
 
     public void ToggleSpectralClass(int spectralClass)
     {
+        if(spawner == null)
+        {
+            spawner = FindObjectOfType<SpawnSpheres>();
+        }
         switch (spectralClass)
         {
             case 0:
                 spawner.particleSystemM.gameObject.SetActive(!spawner.particleSystemM.gameObject.activeSelf);
-                spawner.ApplyToParticleSystem('M', reader.averageSpectralM);
+                if (data_manager.octree == null)
+                {
+                    return;
+                }
+                spawner.ApplyToParticleSystem('M', data_manager.averageSpectralM);
                 break;
             case 1:
                 Debug.Log("toggle 1");
                 spawner.particleSystemK.gameObject.SetActive(!spawner.particleSystemK.gameObject.activeSelf);
-                spawner.ApplyToParticleSystem('K', reader.averageSpectralK);
+                if (data_manager.octree == null)
+                {
+                    return;
+                }
+                spawner.ApplyToParticleSystem('K', data_manager.averageSpectralK);
                 break;
             case 2:
                 spawner.particleSystemG.gameObject.SetActive(!spawner.particleSystemG.gameObject.activeSelf);
-                spawner.ApplyToParticleSystem('G', reader.averageSpectralG);
+                if (data_manager.octree == null)
+                {
+                    return;
+                }
+                spawner.ApplyToParticleSystem('G', data_manager.averageSpectralG);
                 break;
             case 3:
                 spawner.particleSystemF.gameObject.SetActive(!spawner.particleSystemF.gameObject.activeSelf);
-                spawner.ApplyToParticleSystem('F', reader.averageSpectralF);
+                if (data_manager.octree == null)
+                {
+                    return;
+                }
+                spawner.ApplyToParticleSystem('F', data_manager.averageSpectralF);
                 break;
             case 4:
                 spawner.particleSystemA.gameObject.SetActive(!spawner.particleSystemA.gameObject.activeSelf);
-                spawner.ApplyToParticleSystem('A', reader.averageSpectralA);
+                if (data_manager.octree == null)
+                {
+                    return;
+                }
+                spawner.ApplyToParticleSystem('A', data_manager.averageSpectralA);
                 break;
         }
+    }
+
+    internal void ActivateSolGCTooltip(bool value)
+    {
+        solTooltip.SetActive(value);
+        solTooltipTarget.SetActive(value);
+
+        galacticCenterTooltip.SetActive(value);
+        galacticCenterTooltipTarget.SetActive(value);
     }
 
 
     void OnDrawGizmos()
     {
-        if (FindObjectOfType<Reader>().nodeList != null)
+        if (data_manager.nodeList != null && data_manager.nodeList.Count > 0)
         {
             float tintVal = latestLODValue / 7; // Will eventually get values > 1. Color rounds to 1 automatically
             Gizmos.color = new Color(tintVal, 0, 1.0f - tintVal, 0.1f);
-            foreach (PointOctreeNode<CelestialBody> node in FindObjectOfType<Reader>().nodeList)
+            foreach (PointOctreeNode<CelestialBody> node in data_manager.nodeList)
             {
                 Bounds thisBounds = new Bounds(node.Center, new Vector3(node.SideLength, node.SideLength, node.SideLength));
                 Gizmos.DrawWireCube((thisBounds.center/2) + visualCube.transform.position, thisBounds.size / 2f);
@@ -391,13 +508,24 @@ public class PlacementManager : MonoBehaviour, IPunObservable
             stream.SendNext((Vector3)visualCube.transform.localPosition);
             stream.SendNext((Quaternion)visualCube.transform.localRotation);
             stream.SendNext((Vector3)visualCube.transform.localScale);
-           
+
+            stream.SendNext((Vector3)queryObjectArea.transform.localPosition);
+            stream.SendNext((Vector3)queryObjectArea.transform.localScale);
+
+            stream.SendNext((Vector3)queryObjectNearest.transform.localPosition);
+            stream.SendNext((Vector3)queryObjectNearest.transform.localScale);
         }
         else
         {
             visualCube.transform.localPosition = (Vector3)stream.ReceiveNext();
             visualCube.transform.localRotation = (Quaternion)stream.ReceiveNext();
             visualCube.transform.localScale = (Vector3)stream.ReceiveNext();
+
+            queryObjectArea.transform.localPosition = (Vector3)stream.ReceiveNext();
+            queryObjectArea.transform.localScale = (Vector3)stream.ReceiveNext();
+
+            queryObjectNearest.transform.localPosition = (Vector3)stream.ReceiveNext();
+            queryObjectNearest.transform.localScale = (Vector3)stream.ReceiveNext();
         }
     }
 }

@@ -5,12 +5,15 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System;
+using Microsoft.MixedReality.Toolkit.UI;
 
 public class UIManager : MonoBehaviour
 {
     internal NetworkManager network_manager;
     internal HttpFileFetcher http_fetcher;
+    internal DataManager data_manager;
     internal Reader reader;
+    internal PlacementManager placement_manager;
 
     [Tooltip("The Menu of the Application")]
     [SerializeField]
@@ -51,10 +54,7 @@ public class UIManager : MonoBehaviour
     public GameObject enableAdjustButton;
     public GameObject disableAdjustButton;
     public GameObject loadDataButton;
-
-    public GameObject LODSliderObj;
-    public Slider LODSlider;
-
+    
     public GameObject galacticCenter;
 
     public Image spectralImageM;
@@ -81,12 +81,43 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI debugText;
     public GameObject hud;
 
+    public GameObject hudImageFront;
+    public GameObject hudImageBottom;
+    public GameObject hudImageRight;
+
+    internal Vector3 lastQueryPos;
+    internal float lastQueryRadius;
+
+    public string sourceIDSearchString;
+    public TMP_Text sourceIDText;
+
+    public PinchSlider raSlider;
+    public PinchSlider decSlider;
+    public PinchSlider distanceSlider;
+    public PinchSlider rangeSlider;
+
+    public TMP_Text raText;
+    public TMP_Text decText;
+    public TMP_Text distanceText;
+    public TMP_Text rangeText;
+    public TMP_Text distanceMaxText;
+    public TMP_Text rangeMaxText;
+
+
+
+    [Header("Seiten des Hand Menü")]
+    public List<GameObject> handMenuPage0;
+    public List<GameObject> handMenuPage1;
+    public List<GameObject> handMenuPage2;
+
     // Start is called before the first frame update
     void Start()
     {
         network_manager = FindObjectOfType<NetworkManager>();
         http_fetcher = FindObjectOfType<HttpFileFetcher>();
+        data_manager = FindObjectOfType<DataManager>();
         reader = FindObjectOfType<Reader>();
+        placement_manager = FindObjectOfType<PlacementManager>();
 
         hololensMenuTransform = hololensMenu.transform;
         keyboard = this.GetComponent<MixedRealityKeyboard>();
@@ -97,8 +128,10 @@ public class UIManager : MonoBehaviour
         serverFileDropdown = serverFileDropdown_obj.GetComponent<TMP_Dropdown>();
         localFileDropdown = localFileDropdown_obj.GetComponent<TMP_Dropdown>();
         selectedFile_text = selectedFile_obj.GetComponent<TextMeshProUGUI>();
-        LODSlider = LODSliderObj.GetComponent<Slider>();
+        //LODSlider = LODSliderObj.GetComponent<Slider>();
         SetLegendColor();
+
+        SwitchHandMenu(0);
     }
 
     // Update is called once per frame
@@ -108,8 +141,10 @@ public class UIManager : MonoBehaviour
         HandleKeyboardInput();
         PlaceHUD();
         DebugText();
+
     }
 
+    
     private void PlaceHUD()
     {
         hud.transform.position = Camera.main.transform.position + Camera.main.transform.forward;
@@ -207,56 +242,53 @@ public class UIManager : MonoBehaviour
         disableAdjustButton.SetActive(adjust);
     }
 
-    public void SetLODSliderMax(int max)
-    {
-        LODSlider.maxValue = max;
+    //public void SetLODSliderMax(int max)
+    //{
+    //    LODSlider.maxValue = max;
 
-        stepSlider.SliderStepDivisions = max;
-        
-    }
+    //    //stepSlider.SliderStepDivisions = max;
+
+    //}
 
     public void OnLODSliderChange()
     {
-        int lodValue = Mathf.RoundToInt(stepSlider.SliderValue * stepSlider.SliderStepDivisions);
-
-
-        //int lodValue = Mathf.FloorToInt(ui_manager.LODSlider.maxValue - (ui_manager.LODSlider.maxValue * t));
-        if (lodValue != latestLODValue)
+        if (data_manager.octree == null)
         {
-            latestLODValue = lodValue;
-            //ui_manager.LODSlider.value = lodValue;
-            Debug.Log(lodValue);
-            FindObjectOfType<PlacementManager>().SplitOctreeLOD(lodValue);
+            return;
         }
 
+        placement_manager.queryObjectArea.SetActive(true);
 
-        //reader.SplitTreeToLOD((int)LODSlider.value);
+        float ra = Mathf.Lerp(0, 360, raSlider.SliderValue);
+        float dec = Mathf.Lerp(-90, 90, decSlider.SliderValue);
+        float distance = Mathf.Lerp(1, 26000, distanceSlider.SliderValue);
+        float range = Mathf.Lerp(0.01f, 2f, rangeSlider.SliderValue);
+
+        //Debug.Log(String.Format("Ra: {0} , Dec: {1}, Distance: {2}", ra, dec, distance));
+
+        raText.text = "Rektaszension (ra): " + ra.ToString("F2");
+        decText.text = "Deklination (dec): " + dec.ToString("F2");
+        distanceText.text = "Distanz (parsec): " + distance.ToString("F2");
+        rangeText.text = "Distanz (parsec): " + (range * (data_manager.maxDistance / 2f)).ToString("F2");
+
+        distanceMaxText.text = Mathf.RoundToInt(data_manager.maxDistance).ToString();
+        rangeMaxText.text = Mathf.RoundToInt(data_manager.maxDistance).ToString();
+
+        placement_manager.PlaceROIWithAngle(ra, dec, distance, range);
     }
 
     public void DebugText()
     {
+        //Vector3 centerPos = placement_manager.visualCube.transform.position + data_manager.octree.rootNode.averagePositionOfNodes;
+        //Vector3 edgePos = centerPos + (Vector3.Cross(Camera.main.transform.up, centerPos - Camera.main.transform.position).normalized * (data_manager.octree.rootNode.distanceFromAverage / 2) * placement_manager.visualCube.transform.localScale.x);
+        //Vector3 screenCenterPos = Camera.main.WorldToScreenPoint(centerPos);
         if (reader != null)
         {
-            if (reader.averageSpectralM != null && reader.averageSpectralK != null && reader.averageSpectralG != null && reader.averageSpectralF != null && reader.averageSpectralA != null)
+            if (data_manager.averageSpectralM != null && data_manager.averageSpectralK != null && data_manager.averageSpectralG != null && data_manager.averageSpectralF != null && data_manager.averageSpectralA != null)
                 debugText.text = "LOD: " + FindObjectOfType<PlacementManager>().latestLODValue + "\n" +
-                    "# Partikel: " + (reader.averageSpectralM.Count + reader.averageSpectralK.Count + reader.averageSpectralG.Count + reader.averageSpectralF.Count + reader.averageSpectralA.Count) + "\n" +
+                    "# Partikel: " + (data_manager.averageSpectralM.Count + data_manager.averageSpectralK.Count + data_manager.averageSpectralG.Count + data_manager.averageSpectralF.Count + data_manager.averageSpectralA.Count) + "\n" +
                     "Distanz: + " + FindObjectOfType<PlacementManager>().dist.ToString("F2"); 
         }
-    }
-
-
-    public void IncreaseLOD()
-    {
-        LODSlider.value += 1;
-
-        stepSlider.SliderValue = 1;
-        //reader.SplitTreeToLOD((int)LODSlider.value, false);
-    }
-
-    public void DecreaseLOD()
-    {
-        LODSlider.value -= 1;
-        //reader.SplitTreeToLOD((int)LODSlider.value, false);
     }
 
     public void SetLegendColor()
@@ -284,4 +316,109 @@ public class UIManager : MonoBehaviour
         countF.text = F.ToString();
         countA.text = A.ToString();
     }
+
+    public void DisableLoadDataButton()
+    {
+        loadDataButton.SetActive(false);
+    }
+
+    public void SwitchHandMenu(int page)
+    {
+        if(page == 0)
+        {
+            SetHandMenuPage0(true);
+            SetHandMenuPage1(false);
+            SetHandMenuPage2(false);
+
+
+        }
+        else if (page == 1)
+        {
+            SetHandMenuPage0(false);
+            SetHandMenuPage1(true);
+            SetHandMenuPage2(false);
+        }
+        else if(page == 2)
+        {
+            SetHandMenuPage0(false);
+            SetHandMenuPage1(false);
+            SetHandMenuPage2(true);
+        }
+    }
+
+    public void SetHandMenuPage0(bool value)
+    {
+        foreach (GameObject obj in handMenuPage0)
+        {
+            obj.SetActive(value);
+        }
+    }
+
+    public void SetHandMenuPage1(bool value)
+    {
+        foreach (GameObject obj in handMenuPage1)
+        {
+            obj.SetActive(value);
+        }
+    }
+
+    public void SetHandMenuPage2(bool value)
+    {
+        foreach (GameObject obj in handMenuPage2)
+        {
+            obj.SetActive(value);
+        }
+    }
+
+    public void SetHUDMapPosition(Vector3 pos, float scale)
+    {
+        Vector3 newPos;
+        float newScale;
+        if (placement_manager.ROI)
+        {
+            newPos = lastQueryPos + (pos * lastQueryRadius);
+            newScale = lastQueryRadius * scale;
+        }
+        else
+        {
+            newPos = pos;
+            newScale = scale;
+        }
+
+
+        hudImageFront.GetComponent<RectTransform>().localPosition = new Vector3(newPos.x, newPos.y, 0);
+        hudImageBottom.GetComponent<RectTransform>().localPosition = new Vector3(newPos.x, -newPos.z, 0);
+        hudImageRight.GetComponent<RectTransform>().localPosition = new Vector3(newPos.z, newPos.y, 0);
+
+        hudImageFront.GetComponent<RectTransform>().localScale = new Vector3(newScale, newScale, 0);
+        hudImageBottom.GetComponent<RectTransform>().localScale = new Vector3(newScale, newScale, 0);
+        hudImageRight.GetComponent<RectTransform>().localScale = new Vector3(newScale, newScale, 0);
+
+
+        lastQueryPos = newPos;
+        lastQueryRadius = newScale;
+    }
+
+
+    public void ModifySourceIDSearchString(int value)
+    {
+        if (value >= 0)
+        {
+            sourceIDSearchString += value.ToString();
+        }
+        else if (value == -1)
+        {
+            if (sourceIDSearchString.Length > 0)
+            {
+                sourceIDSearchString = sourceIDSearchString.Remove(sourceIDSearchString.Length - 1, 1);
+            }
+        }
+        else if (value == -2)
+        {
+            sourceIDSearchString = "";
+        }
+
+        sourceIDText.text = "ID: " + sourceIDSearchString;
+    }
+
 }
