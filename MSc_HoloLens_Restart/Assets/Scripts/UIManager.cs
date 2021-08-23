@@ -269,7 +269,7 @@ public class UIManager : MonoBehaviour
         raText.text = "Rektaszension (ra): " + ra.ToString("F2");
         decText.text = "Deklination (dec): " + dec.ToString("F2");
         distanceText.text = "Distanz (parsec): " + distance.ToString("F2");
-        rangeText.text = "Distanz (parsec): " + (range * (data_manager.maxDistance / 2f)).ToString("F2");
+        rangeText.text = "Radius (parsec): " + (range * (data_manager.maxDistance / 2f)).ToString("F2");
 
         distanceMaxText.text = Mathf.RoundToInt(data_manager.maxDistance).ToString();
         rangeMaxText.text = Mathf.RoundToInt(data_manager.maxDistance).ToString();

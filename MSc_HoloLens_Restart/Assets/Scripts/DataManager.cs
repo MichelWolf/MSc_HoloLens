@@ -136,6 +136,9 @@ public class DataManager : MonoBehaviour
             ui_manager.SetLegendCount(averageSpectralM.Count, averageSpectralK.Count, averageSpectralG.Count, averageSpectralF.Count, averageSpectralA.Count);
             yield return new WaitForSeconds(1f);
             Debug.Log(count);
+
+            //count = 0;
+            ////    yield return null;
         }
     }
 

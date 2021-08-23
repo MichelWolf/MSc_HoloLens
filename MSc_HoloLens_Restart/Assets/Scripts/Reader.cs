@@ -20,7 +20,8 @@ public class Reader : MonoBehaviour
     protected BinaryReader binaryReader = null;    
 
     internal DataManager data_manager;
-    
+    private int minTemp = int.MaxValue;
+    private int maxTemp = int.MinValue;
     void Start()
     {
         http_fetcher = FindObjectOfType<HttpFileFetcher>();
@@ -109,6 +110,16 @@ public class Reader : MonoBehaviour
                 {
                     data_manager.maxDistance = inputDistance;
                 }
+
+                if(inputTemp < minTemp)
+                {
+                    minTemp = inputTemp;
+                }
+
+                if(inputTemp > maxTemp)
+                {
+                    maxTemp = inputTemp;
+                }
                 
                 i++;
             }
@@ -125,11 +136,7 @@ public class Reader : MonoBehaviour
         yield return null;
 
         data_manager.octree.SetRootNodeVecAndTemp();
-
-        //ui_manager.SetLODSliderMax(data_manager.octree.depth);
-
-        //FindObjectOfType<PlacementManager>().PlaceDebugSphere(266.4051f, -28.93175f, 8122f);
-        //FindObjectOfType<PlacementManager>().PlaceDebugSphere(0, 90, data_manager.maxDistance / 2f);
+        Debug.Log(minTemp + " - - - " + maxTemp);
     }    
 }
 

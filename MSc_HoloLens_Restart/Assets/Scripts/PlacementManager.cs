@@ -112,6 +112,12 @@ public class PlacementManager : MonoBehaviour, IPunObservable
                 dynamicLODCoroutine = StartCoroutine(data_manager.SplitOctreeLODWithPixelSize());
             }
         }
+
+
+        if(queryObjectNearest.activeSelf)
+        {
+            QueryNearest();
+        }
     }
 
     public void EnableAdjustment()
@@ -232,8 +238,8 @@ public class PlacementManager : MonoBehaviour, IPunObservable
 
     public void EnableQueryObjectNearest()
     {
-        queryObjectNearest.transform.position = handMenu.transform.position;
-        queryObjectNearest.SetActive(true);
+        //queryObjectNearest.transform.position = handMenu.transform.position;
+        queryObjectNearest.SetActive(!queryObjectNearest.activeSelf);
     }
 
     public void QueryNearestObject()
@@ -291,7 +297,7 @@ public class PlacementManager : MonoBehaviour, IPunObservable
 
     public void QueryNearestPoint()
     {
-        queryObjectNearest.SetActive(false);
+        //queryObjectNearest.SetActive(false);
         nearestDistanceSoFar = float.MaxValue;
         List<CelestialBody> results = null;
         if (ROI)
